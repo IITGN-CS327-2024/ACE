@@ -190,9 +190,21 @@ wloop(iter>0){
     echo(iter);
     iter--;
 }
-```  
+```
 
-
+## Using Functions 
+* The functions are entities used to give an output based on certain inputs( not necessary to always have an input and output).
+* The language also supports void return type.
+* Defining Functions : ```func <data type/void> <function name> ( parameters with data type comma separated ){...... return something  }```
+  ```shell
+  func num increment_by_one(num a){
+  return a+1;
+  }
+  
+  cook num a=5;
+  cook num b=increment_by_one(a);
+  echo(b);
+  ```
 
 
 
