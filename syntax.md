@@ -39,7 +39,7 @@ The ```flag``` keyword is used to declare a bool.
 ```shell
 cook flag b1;
 b1=true;
-cook char b2=false;
+cook flag b2=false;
 ```
 
 ### Syntax for binary operations   
@@ -62,7 +62,7 @@ cook char b2=false;
 * (!) - NOT
 * (~) - BITWISE NOT  
 
-###syntax for strings 
+### syntax for strings 
 
 ```cook str <string name>= “some_string”;```
 
@@ -74,6 +74,78 @@ cook str s1;
 s1="abc";
 cook str s2="def";
 ```
+
+### Syntax for Arrays 
+* Arrays are used to store elements 
+* They cannot have different datatype elements
+* Declaration of Array:  ```cook < datatype > < arrayname >[length of array];```
+* Declaration + Initialization :```cook < datatype > < arrayname > = {values comma separated };```  
+
+```shell
+cook int arr1[5];
+cook int arr2={ 1 , 2 , 3 , 4 , 5};
+```  
+* To calculate length: ```len(< arrayname >)```
+* For head: ```headof(< arrayname >)```  
+* For tail: ```tailof(< arrayname >)```  
+* For Cons: ```< array name > = < element > :: < array name >```  
+* For accessing  element at ith index : ```< arrayname >[i]```
+* For modifying element at ith index : ```< arrayname >[i]=< some value >;```  
+
+```shell
+cook int length=len(arr);
+cook int head=headof(arr);
+cook int tail=tailof(arr);
+cook int new_arr= 6 :: arr1;
+cook int second_element=arr1[2];
+arr1[2]=7;
+```
+
+
+### Syntax for Tuples
+* Tuples are used to store elements, also the elements can have different datatypes
+* The tuple remains immutable
+* The tuple will contain basic datatyples like integers and strings and won't support nested components like lists, tuples, etc .  
+* Declaration + Initialization :```cook < tuple name > = (values comma separated);```  
+
+```shell
+cook tup=( 1 , "A" , 3 , "C" , 5 );
+```  
+* To calculate length: ```len(< tuple name >)```
+* For head: ```headof(< tuple name >)```  
+* For tail: ```tailof(< tuple name >)```   
+* For accessing  element at ith index : ```< tuple name >[i]```
+* 
+```shell
+cook int length=len(tup);
+cook int head=headof(tup);
+cook int tail=tailof(tup);
+cook int second_element=tup[2];
+```
+
+### Syntax for List 
+* List are used to store elements, also the elements can have different datatypes
+* Declaration of List:  ```cook < list name > = [];```
+* Declaration + Initialization :```cook < list name > = [values comma separated ];```  
+
+```shell
+cook list1=[];
+cook list2=[ 1 , "abcd" , 3 , 4 , 5];
+```  
+* To calculate length: ```len(< list name >)```
+* For head: ```headof(< list name >)```  
+* For tail: ```tailof(< list name >)```  
+* For accessing  element at ith index : ```< list name >[i]```
+* For modifying element at ith index : ```< list name >[i]=< some value >;```  
+
+```shell
+cook int length=len(list1);
+cook int head=headof(list1);
+cook int tail=tailof(list1);
+cook int second_element=list1[2];
+list1[2]=7;
+```
+
 
 
 
