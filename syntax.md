@@ -82,8 +82,8 @@ cook str s2="def";
 * Declaration + Initialization :```cook < datatype > < arrayname > = {values comma separated };```  
 
 ```shell
-cook int arr1[5];
-cook int arr2={ 1 , 2 , 3 , 4 , 5};
+cook num arr1[5];
+cook num arr2={ 1 , 2 , 3 , 4 , 5};
 ```  
 * To calculate length: ```len(< arrayname >)```
 * For head: ```headof(< arrayname >)```  
@@ -93,11 +93,11 @@ cook int arr2={ 1 , 2 , 3 , 4 , 5};
 * For modifying element at ith index : ```< arrayname >[i]=< some value >;```  
 
 ```shell
-cook int length=len(arr);
-cook int head=headof(arr);
-cook int tail=tailof(arr);
-cook int new_arr= 6 :: arr1;
-cook int second_element=arr1[2];
+cook num length=len(arr);
+cook num head=headof(arr);
+cook num tail=tailof(arr);
+cook num new_arr= 6 :: arr1;
+cook num second_element=arr1[2];
 arr1[2]=7;
 ```
 
@@ -117,10 +117,10 @@ cook tup=( 1 , "A" , 3 , "C" , 5 );
 * For accessing  element at ith index : ```< tuple name >[i]```
 * 
 ```shell
-cook int length=len(tup);
-cook int head=headof(tup);
-cook int tail=tailof(tup);
-cook int second_element=tup[2];
+cook num length=len(tup);
+cook num head=headof(tup);
+cook num tail=tailof(tup);
+cook num second_element=tup[2];
 ```
 
 ### Syntax for List 
@@ -139,12 +139,60 @@ cook list2=[ 1 , "abcd" , 3 , 4 , 5];
 * For modifying element at ith index : ```< list name >[i]=< some value >;```  
 
 ```shell
-cook int length=len(list1);
-cook int head=headof(list1);
-cook int tail=tailof(list1);
-cook int second_element=list1[2];
+cook num length=len(list1);
+cook num head=headof(list1);
+cook num tail=tailof(list1);
+cook num second_element=list1[2];
 list1[2]=7;
 ```
+
+## Syntax to Print 
+* Print to the terminal: ```echo( expression to be printed ) ;```
+```shell
+cook num a=5;
+echo(a);
+echo(" This prints Hello !");
+```  
+
+## Branches and Loops
+* ***Branches*** :
+* if/else if ( boolean expression or integer ->{false if 0 else true}) {...}
+* else {...}
+```shell
+cook num a=2;
+if(a>2){
+    echo("The number is greater than 2");
+}
+else if(a<2>){
+    echo("The number is less than 2");
+}
+else{
+    echo("The number is 2");
+}
+```  
+
+* ***Loops*** :
+* floop is used as an iteration statement(similar to for loop). 
+* Used as : ```floop(declaration + initialization ; stopping condition ; iteration ){.....}```  
+
+```shell
+floop(cook num a=1; a < 5; a++){
+    echo(a);
+}
+```  
+
+* wloop is used as an iteration statement(similar to while loop). 
+* Used as : ```wloop(stopping condition){.....}```  
+
+```shell
+cook num iter=5;
+wloop(iter>0){
+    echo(iter);
+    iter--;
+}
+```  
+
+
 
 
 
