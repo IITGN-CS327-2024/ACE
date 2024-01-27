@@ -176,6 +176,7 @@ else{
 * ***Loops*** :
 * floop is used as an iteration statement(similar to for loop).
 * ```break``` exits from loops, and ```continue``` exits the current iteration and continues with the next.
+* floop does not support multiple expressions in iteration. 
 * Used as : ```floop(declaration + initialization ; stopping condition ; iteration ){.....}```  
 
 ```shell
