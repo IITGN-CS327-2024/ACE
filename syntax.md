@@ -212,6 +212,25 @@ wloop(iter>0){
   echo(b);
   ```
 
+## Closures
+* A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives you access to an outer function's scope from an inner function.
+* An example of closure in ACE Lang.  
+
+```shell
+func func makeFunc(){
+    cook str name="Pratham Sagar";
+    func display_name(){
+        echo(name);
+    }
+    return display_name;
+}
+
+const myFunc = makeFunc();
+myFunc();
+```  
+
+* As ACE supports closures, the name variable is still accessible by inner function although it's declared in the outer function.  
+
 
 
 
