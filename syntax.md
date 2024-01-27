@@ -51,10 +51,12 @@ cook flag b2=false;
 * (#) - Power
 * (&) -BITWISE AND
 * ( | ) - BITWISE OR
-* (&&) - AND
-* ( || ) -  OR
+* (&&) - AND 
+* ( || ) -  OR 
 * (^)- XOR
-* (%) - MODULO  
+* (%) - MODULO
+
+* ```(&&)``` and ```(||)``` are Short-circuiting (lazy) boolean operators
 
 ### Syntax for unary operations  
 * (++) - ADDING ONE
@@ -172,11 +174,13 @@ else{
 ```  
 
 * ***Loops*** :
-* floop is used as an iteration statement(similar to for loop). 
+* floop is used as an iteration statement(similar to for loop).
+* ```break``` exits from loops, and ```continue``` exits the current iteration and continues with the next.
 * Used as : ```floop(declaration + initialization ; stopping condition ; iteration ){.....}```  
 
 ```shell
 floop(cook num a=1; a < 5; a++){
+    continue;
     echo(a);
 }
 ```  
@@ -189,6 +193,7 @@ cook num iter=5;
 wloop(iter>0){
     echo(iter);
     iter--;
+    break;
 }
 ```
 
