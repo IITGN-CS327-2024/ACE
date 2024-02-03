@@ -83,7 +83,7 @@ func IgnoreCommentsAndWhiteSpace(tokenizer *Tokenizer) {
 	}
 	if IsEndOfLine(tokenizer.location[tokenizer.index]) {
 		tokenizer.index++
-		for isWhiteSpace(tokenizer.location[tokenizer.index]) {
+		for IsEndOfLine(tokenizer.location[tokenizer.index]) || isWhiteSpace(tokenizer.location[tokenizer.index]) {
 			tokenizer.index++
 		}
 	}
@@ -285,6 +285,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 	case '"':
 		token.typetoken = TokenType_CONSTANT
 		var start_loc int = tokenizer.index
+		tokenizer.index++
 		for tokenizer.location[tokenizer.index] != '"' {
 			tokenizer.index++
 			token.length++
@@ -293,9 +294,11 @@ func GetToken(tokenizer *Tokenizer) Token {
 				token.typetoken = TokenType_OTHER
 				break
 			}
+
 		}
-		token.contents = tokenizer.location[start_loc:tokenizer.index]
 		tokenizer.index++
+		token.contents = tokenizer.location[start_loc:tokenizer.index]
+
 	default:
 		{
 			if IsLetter(tokenizer.location[tokenizer.index]) {
@@ -368,28 +371,21 @@ func ResizeTokenArray(tokenArray *TokenArray, size int) {
 	InitializeTokenArray(tokenArray, size)
 }
 
-func LexInput(input string) TokenArray {
+func LexInput(input string) []Token {
+	var tokenArray []Token
 	tokenizer := Tokenizer{location: input, count: 0}
 	lexing := true
 
-	tokenArray := TokenArray{}
-	InitializeTokenArray(&tokenArray, 10)
-
 	for lexing {
 		token := GetToken(&tokenizer)
-		fmt.Println(token)
-		tokenArray.tokens[tokenizer.count] = &token
-		tokenizer.count++
 
-		if tokenizer.count == tokenArray.capacity {
-			ResizeTokenArray(&tokenArray, tokenArray.capacity*2)
-		}
-		if tokenArray.tokens[tokenizer.count-1].typetoken == TokenType_EOF {
+		tokenArray = append(tokenArray, token)
+		tokenizer.count++
+		if token.typetoken == TokenType_EOF {
 			lexing = false
 		}
 	}
 
-	tokenArray.count = tokenizer.count
 	return tokenArray
 }
 func main() {
@@ -400,17 +396,13 @@ func main() {
 		fmt.Println("Error reading file:", err)
 		return
 	}
-
 	input := string(fileContent)
 	input2 := input + "@"
-	fmt.Println(input2)
+	// fmt.Println(input2)
 	tokenarr := LexInput(input2)
-	index := 0
-	for index < tokenarr.count {
-		a := tokenarr.tokens[index]
-		fmt.Println(a.typetoken, a.length, a.contents)
-		index++
-	}
 
-	// fmt.Println(tokenarr)
+	for index := 0; index < len(tokenarr); index++ {
+		println((tokenarr[index].typetoken), " ", tokenarr[index].contents)
+	}
+	fmt.Println(tokenarr)
 }
