@@ -1,13 +1,15 @@
 func main(){
-    
+
 cook num print_these = {1, 3, 5, 7, 9} 
 
 cook flag isIt = false
 
 floop(cook num a=0; a < len(print_these); a++){
-    if (flag == true){
+    if (isIt == true){
     echo(print_these[a])
     }
-    if(a%2 == 1)flag = true
+    if(a%2 == 1){
+        isIt = true
+    }
 }
 }
