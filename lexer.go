@@ -11,12 +11,6 @@ type Token struct {
 	length    int
 }
 
-type TokenArray struct {
-	tokens   []*Token
-	count    int
-	capacity int
-}
-
 type Tokenizer struct {
 	location string
 	index    int
@@ -28,21 +22,24 @@ type TokenType int
 const (
 	TokenType_IDENTIFIER TokenType = iota
 
-	// Whitespace
-	TokenType_WHITESPACE
-
-	// NUM
 	TokenType_NUM
-	// Operators
 	TokenType_OPERATOR
-	// Keywords
 	TokenType_KEYWORD
-
-	// Constant
 	TokenType_CONSTANT
+
 	TokenType_OTHER
 	TokenType_EOF
 )
+
+var TokenTypeStrings = map[TokenType]string{
+	TokenType_IDENTIFIER: "TokenType_IDENTIFIER",
+	TokenType_NUM:        "TokenType_NUM",
+	TokenType_OPERATOR:   "TokenType_OPERATOR",
+	TokenType_KEYWORD:    "TokenType_KEYWORD",
+	TokenType_CONSTANT:   "TokenType_CONSTANT",
+	TokenType_OTHER:      "TokenType_OTHER",
+	TokenType_EOF:        "TokenType_EOF",
+}
 
 func isWhiteSpace(c byte) bool {
 	res := (c == ' ') || (c == '\t') || (c == '\f') || (c == '\v')
@@ -109,37 +106,37 @@ func GetToken(tokenizer *Tokenizer) Token {
 		break
 	case '(':
 		token.typetoken = TokenType_OTHER
-		token.contents = "l_paran"
+		token.contents = "left_paren"
 		tokenizer.index++
 		token.length++
 		break
 	case ')':
 		token.typetoken = TokenType_OTHER
-		token.contents = "r_paran"
+		token.contents = "rigth_paren"
 		tokenizer.index++
 		token.length++
 		break
 	case '[':
 		token.typetoken = TokenType_OTHER
-		token.contents = "l_brac"
+		token.contents = "left_s_brac"
 		tokenizer.index++
 		token.length++
 		break
 	case ']':
 		token.typetoken = TokenType_OTHER
-		token.contents = "r_brac"
+		token.contents = "right_s_brac"
 		tokenizer.index++
 		token.length++
 		break
 	case '{':
 		token.typetoken = TokenType_OTHER
-		token.contents = "l_brack"
+		token.contents = "left_brac"
 		tokenizer.index++
 		token.length++
 		break
 	case '}':
 		token.typetoken = TokenType_OTHER
-		token.contents = "r_brack"
+		token.contents = "right_brac"
 		tokenizer.index++
 		token.length++
 		break
@@ -282,6 +279,24 @@ func GetToken(tokenizer *Tokenizer) Token {
 		tokenizer.index++
 		token.length++
 		break
+	case ',':
+		token.typetoken = TokenType_OTHER
+		token.contents = "coma"
+		tokenizer.index++
+		token.length++
+		break
+	case '\'':
+		token.typetoken = TokenType_OTHER
+		token.contents = "quatation"
+		tokenizer.index++
+		token.length++
+		break
+	case ':':
+		token.typetoken = TokenType_OTHER
+		token.contents = "colon"
+		tokenizer.index++
+		token.length++
+		break
 	case '"':
 		token.typetoken = TokenType_CONSTANT
 		var start_loc int = tokenizer.index
@@ -348,28 +363,6 @@ func GetToken(tokenizer *Tokenizer) Token {
 	}
 	return token
 }
-func DeleteTokenContents(tokenArray *TokenArray) {
-	for i := 0; i < tokenArray.count; i++ {
-		tokenArray.tokens[i].contents = ""
-	}
-}
-
-func DeleteTokens(tokenArray *TokenArray) {
-	DeleteTokenContents(tokenArray)
-	tokenArray.tokens = nil
-	tokenArray = &TokenArray{}
-}
-
-func InitializeTokenArray(tokenArray *TokenArray, size int) {
-	tokenArray.tokens = make([]*Token, size)
-	tokenArray.capacity = size
-}
-
-func ResizeTokenArray(tokenArray *TokenArray, size int) {
-
-	DeleteTokens(tokenArray)
-	InitializeTokenArray(tokenArray, size)
-}
 
 func LexInput(input string) []Token {
 	var tokenArray []Token
@@ -389,7 +382,6 @@ func LexInput(input string) []Token {
 	return tokenArray
 }
 func main() {
-	//print
 	fileName := "input.ace"
 	fileContent, err := os.ReadFile(fileName)
 	if err != nil {
@@ -398,11 +390,9 @@ func main() {
 	}
 	input := string(fileContent)
 	input2 := input + "@"
-	// fmt.Println(input2)
 	tokenarr := LexInput(input2)
 
 	for index := 0; index < len(tokenarr); index++ {
-		println((tokenarr[index].typetoken), " ", tokenarr[index].contents)
+		fmt.Printf("%-20s %s\n", TokenTypeStrings[(tokenarr[index].typetoken)], tokenarr[index].contents)
 	}
-	fmt.Println(tokenarr)
 }
