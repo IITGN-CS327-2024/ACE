@@ -154,6 +154,7 @@ list1[2]=7;
 cook num a=5;
 echo(a);
 echo(" This prints Hello !");
+echo(" This prints a" + a);
 ```  
 
 ## Branches and Loops
@@ -231,7 +232,29 @@ myFunc();
 
 * As ACE supports closures, the name variable is still accessible by inner function although it's declared in the outer function.  
 
+## Handling Errors
+* ```try``` Encloses code that may potentially throw an exception.
+* ```catch``` Handles exceptions thrown within a try block, allowing for graceful error handling.
+* ```throw``` Explicitly raises an exception within a program, allowing for custom error propagation and handling. Our throw takes a string and shows it on console. 
 
+```shell
+func void main(){
+try{
+cook num result=10/0;
+echo(result);
+}
+catch{
+echo("Divide by zero error !");
+}
+}
+
+func num divide(num divident,num divisor){
+if(divisor==0){
+throw("Cannot divide by zero!");
+}
+return dividend / divisor;
+}
+```
 
 
 
