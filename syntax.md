@@ -165,7 +165,7 @@ cook num a=2;
 if(a>2){
     echo("The number is greater than 2");
 }
-else if(a<2>){
+else_if(a<2){
     echo("The number is less than 2");
 }
 else{
