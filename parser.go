@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 )
 
 func main() {
@@ -16,6 +17,9 @@ func main() {
 		return
 	}
 	input := string(fileContent)
+	cmnd := exec.Command("main.exe", "arg")
+	//cmnd.Run() // and wait
+	cmnd.Start()
 	size = len(input)
 	// fmt.Println(input)
 	tokenarr := LexInput(input)
