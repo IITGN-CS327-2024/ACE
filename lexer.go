@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
 type Token struct {
@@ -29,6 +28,7 @@ const (
 
 	TokenType_OTHER
 	TokenType_EOF
+	TokenType_ERROR
 )
 
 var TokenTypeStrings = map[TokenType]string{
@@ -39,6 +39,7 @@ var TokenTypeStrings = map[TokenType]string{
 	TokenType_CONSTANT:   "TokenType_CONSTANT",
 	TokenType_OTHER:      "TokenType_OTHER",
 	TokenType_EOF:        "TokenType_EOF",
+	TokenType_ERROR:      "TokenType_ERROR",
 }
 
 var size int
@@ -77,15 +78,15 @@ func IsNumeric(c byte) bool {
 }
 
 func IgnoreCommentsAndWhiteSpace(tokenizer *Tokenizer) {
-	if tokenizer.index!=size && (IsEndOfLine(tokenizer.location[tokenizer.index]) || isWhiteSpace(tokenizer.location[tokenizer.index])) {
+	if tokenizer.index != size && (IsEndOfLine(tokenizer.location[tokenizer.index]) || isWhiteSpace(tokenizer.location[tokenizer.index])) {
 		tokenizer.index++
-		for tokenizer.index!=size && (IsEndOfLine(tokenizer.location[tokenizer.index]) || isWhiteSpace(tokenizer.location[tokenizer.index])) {
+		for tokenizer.index != size && (IsEndOfLine(tokenizer.location[tokenizer.index]) || isWhiteSpace(tokenizer.location[tokenizer.index])) {
 			tokenizer.index++
 		}
 	}
 	// Look for $$ symbols for comments
-	if tokenizer.index!=size && (tokenizer.location[tokenizer.index] == '$') && (tokenizer.location[tokenizer.index+1] == '$') {
-		for tokenizer.index!=size && !IsEndOfLine(tokenizer.location[tokenizer.index]) {
+	if tokenizer.index != size && (tokenizer.location[tokenizer.index] == '$') && (tokenizer.location[tokenizer.index+1] == '$') {
+		for tokenizer.index != size && !IsEndOfLine(tokenizer.location[tokenizer.index]) {
 			tokenizer.index++
 		}
 		tokenizer.index++
@@ -96,7 +97,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 	token := Token{}
 	token.length = 0
 	IgnoreCommentsAndWhiteSpace(tokenizer)
-	if (tokenizer.index==size) {
+	if tokenizer.index == size {
 		token.typetoken = TokenType_EOF
 		token.contents = "end_symbol"
 		return token
@@ -145,7 +146,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '+':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '+' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '+' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "increment_by_one"
 			tokenizer.index += 2
@@ -158,7 +159,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '-':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '-' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '-' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "decrement_by_one"
 			tokenizer.index += 2
@@ -183,7 +184,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '>':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '=' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '=' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "gth_equals_to"
 			tokenizer.index += 2
@@ -196,7 +197,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '<':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '=' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '=' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "lth_equals_to"
 			tokenizer.index += 2
@@ -209,7 +210,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '=':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '=' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '=' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "equals_to"
 			tokenizer.index += 2
@@ -234,7 +235,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '&':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '&' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '&' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "and"
 			tokenizer.index += 2
@@ -247,7 +248,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 		token.length++
 		break
 	case '|':
-		if tokenizer.index!=size-1 && tokenizer.location[tokenizer.index+1] == '|' {
+		if tokenizer.index != size-1 && tokenizer.location[tokenizer.index+1] == '|' {
 			token.typetoken = TokenType_OPERATOR
 			token.contents = "or"
 			tokenizer.index += 2
@@ -293,20 +294,20 @@ func GetToken(tokenizer *Tokenizer) Token {
 		var start_loc int = tokenizer.index
 		tokenizer.index++
 		var flag bool = false
-		for tokenizer.index!=size && tokenizer.location[tokenizer.index] != '\'' {
+		for tokenizer.index != size && tokenizer.location[tokenizer.index] != '\'' {
 			tokenizer.index++
 			token.length++
-			if tokenizer.index==size {
+			if tokenizer.index == size {
 				fmt.Println("You forgot to close the quotation mark")
 				token.typetoken = TokenType_OTHER
 				flag = true
 				break
 			}
 		}
-		if (flag) {
+		if flag {
 			token.contents = tokenizer.location[start_loc:tokenizer.index]
 			break
-		} 
+		}
 		tokenizer.index++
 		token.contents = tokenizer.location[start_loc:tokenizer.index]
 	case ':':
@@ -320,20 +321,20 @@ func GetToken(tokenizer *Tokenizer) Token {
 		var start_loc int = tokenizer.index
 		tokenizer.index++
 		var flag bool = false
-		for tokenizer.index!=size && tokenizer.location[tokenizer.index] != '"' {
+		for tokenizer.index != size && tokenizer.location[tokenizer.index] != '"' {
 			tokenizer.index++
 			token.length++
-			if tokenizer.index==size {
+			if tokenizer.index == size {
 				fmt.Println("You forgot to close the quotation mark")
 				token.typetoken = TokenType_OTHER
 				flag = true
 				break
 			}
 		}
-		if (flag) {
+		if flag {
 			token.contents = tokenizer.location[start_loc:tokenizer.index]
 			break
-		} 
+		}
 		tokenizer.index++
 		token.contents = tokenizer.location[start_loc:tokenizer.index]
 
@@ -343,7 +344,7 @@ func GetToken(tokenizer *Tokenizer) Token {
 				start_loc := tokenizer.index
 				token.typetoken = TokenType_IDENTIFIER
 
-				for tokenizer.index!=size && (IsLetter(tokenizer.location[tokenizer.index]) || IsNumeric(tokenizer.location[tokenizer.index]) || tokenizer.location[tokenizer.index] == '_') {
+				for tokenizer.index != size && (IsLetter(tokenizer.location[tokenizer.index]) || IsNumeric(tokenizer.location[tokenizer.index]) || tokenizer.location[tokenizer.index] == '_') {
 					tokenizer.index++
 					token.length++
 				}
@@ -380,11 +381,16 @@ func GetToken(tokenizer *Tokenizer) Token {
 				start_loc := tokenizer.index
 				token.typetoken = TokenType_NUM
 
-				for tokenizer.index!=size && IsNumeric(tokenizer.location[tokenizer.index]) {
+				for tokenizer.index != size && IsNumeric(tokenizer.location[tokenizer.index]) {
 					tokenizer.index++
 					token.length++
 				}
 				token.contents = tokenizer.location[start_loc:tokenizer.index]
+			} else {
+				token.typetoken = TokenType_ERROR
+				token.contents = string(tokenizer.location[tokenizer.index])
+				tokenizer.index++
+				token.length++
 			}
 		}
 
@@ -402,31 +408,24 @@ func LexInput(input string) []Token {
 
 		tokenArray = append(tokenArray, token)
 
-		if (token.typetoken == TokenType_EOF){
+		if token.typetoken == TokenType_EOF {
 			lexing = false
 		} else if tokenizer.index == size {
 			lexing = false
 			var t Token
-			t.typetoken=TokenType_EOF
-			t.contents="end_symbol"
+			t.typetoken = TokenType_EOF
+			t.contents = "end_symbol"
 			tokenArray = append(tokenArray, t)
 		}
 	}
 
 	return tokenArray
 }
-func main() {
-	fileName := "test3.ace"
-	fileContent, err := os.ReadFile(fileName)
-	if err != nil {
-		fmt.Println("Error reading file:", err)
-		return
-	}
-	input := string(fileContent)
-	size = len(input)
-	tokenarr := LexInput(input)
 
-	for index := 0; index < len(tokenarr); index++ {
-		fmt.Printf("%-20s %s\n", TokenTypeStrings[(tokenarr[index].typetoken)], tokenarr[index].contents)
-	}
-}
+// func LexFile(input string) {
+
+// 	size = len(input)
+// 	tokenarr := LexInput(input)
+// 	return tokenarr
+
+// }
