@@ -3,17 +3,8 @@
 #include <stdlib.h>
 %}
 
-%token FUNC
-%token ID NUM_FLAG STR_FLAG BOOL MAIN_TOKEN CONST FLAG
+%token FUNC ID NUM_FLAG STR_FLAG BOOL MAIN_TOKEN CONST FLAG NUM VAL1 _digit
 %token FLOOP WLOOP COOK GE LE NEQ GT LT IF ELSE ELSE_IF AND OR INC DEC TRUE FALSE ECHO
-
-%start program
-
-%type <ival> e1
-%type <sval> dt
-%type <ival> stmts
-%type <ival> floop wloop assign cond c exp f1 op if_cond else_if_cond else_cond iter stmt l
-
 %left ADDOP SUBOP
 %left MULOP DIVOP
 %left AND OR
@@ -22,10 +13,9 @@
 %left ','
 %left '='
 %left IF ELSE WHILE FOR RETURN BREAK CONTINUE '{' '}'
-%nonassoc  ELSE '!'
-%token <ival> NUM
-%token <ival> FLAG
-%token <sval> VAL1
+
+
+%start program
 
 %%
 
@@ -153,13 +143,13 @@ stmt:
 
 l:
     COOK STR_FLAG ID '=' VAL1
-    | COOK NUM_FLAG ID '=' VAL2
-    | COOK FLAG ID '=' VAL3
-    | COOK NUM_FLAG ID '=' '{' VAL4 '}'
-    | COOK STR_FLAG ID '=' '{' VAL5 '}'
-    | COOK FLAG ID '=' '{' VAL6 '}'
-    | COOK dt ID '=' '[' VAL7 ']'
-    | COOK ID '=' '(' VAL7 ')'
+    | COOK NUM_FLAG ID '=' VAL1
+    | COOK FLAG ID '=' VAL1
+    | COOK NUM_FLAG ID '=' '{' VAL1 '}'
+    | COOK STR_FLAG ID '=' '{' VAL1 '}'
+    | COOK FLAG ID '=' '{' VAL1 '}'
+    | COOK dt ID '=' '[' VAL1 ']'
+    | COOK ID '=' '(' VAL1 ')'
     | COOK STR_FLAG ID
     | COOK NUM_FLAG ID
     | COOK FLAG ID
@@ -169,26 +159,23 @@ l:
     | COOK dt ID
     | COOK ID
     | ID '=' VAL1
-    | ID '=' VAL2
-    | ID '=' VAL3
-    | ID '=' '{' VAL4 '}'
-    | ID '=' '{' VAL5 '}'
-    | ID '=' '{' VAL6 '}'
-    | dt ID '=' '[' VAL7 ']'
-    | ID '=' '(' VAL7 ')'
-    | ECHO '(' ')'
+    | ID '=' VAL1
+    | ID '=' VAL1
+    | ID '=' '{' VAL1 '}'
+    | ID '=' '{' VAL1 '}'
+    | ID '=' '{' VAL1 '}'
+    | dt ID '=' '[' VAL1 ']'
+    | ID '=' '(' VAL1 ')'
+    | ECHO '('  ')'
     ;
 
 
-VAL2:
-    NUM
+VAL2: NUM_FLAG VAL2_T
+    | '0'
     ;
-
-NUM:
-    NUM_FLAG {_digit}
-    | _digit
+VAL2_T: _digit VAL2_T
+    | /* empty */
     ;
-
 VAL3:
     TRUE
     | FALSE
@@ -226,4 +213,7 @@ VAL7:
 
 // Lexical part
 _digit : [0-9];
-
+VAL1: '\"' [^'\"] '\"'
+    ;
+NUM_FLAG:   [1-9]
+    ;
