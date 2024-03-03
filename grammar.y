@@ -33,8 +33,12 @@ main_func:
     ;
 
 e1:
-    | dt ID e1
-    | ',' e1
+    dt ID e2
+    | /* empty */
+    ;
+
+e2: 
+    ',' e1
     | /* empty */
     ;
 
@@ -79,9 +83,7 @@ c:
     | exp comp exp
     | c AND c
     | c OR c
-    | ID
     | FLAG
-    | NUM
     | TRUE
     | FALSE
     ;
@@ -97,13 +99,9 @@ comp:
 exp:
     ID
     | NUM
-    | exp f1
+    | exp op exp
     | '(' exp ')'
-    ;
-
-f1:
-    op exp f1
-    | /* empty */
+    | /*empty*/
     ;
 
 op:
@@ -135,38 +133,27 @@ iter:
 
 stmt:
     l
-    | wloop
-    | floop
-    | if_cond
     | /* empty */
     ;
 
 l:
     COOK STR_FLAG ID '=' VAL1
-    | COOK NUM_FLAG ID '=' VAL1
-    | COOK FLAG ID '=' VAL1
-    | COOK NUM_FLAG ID '=' '{' VAL1 '}'
-    | COOK STR_FLAG ID '=' '{' VAL1 '}'
-    | COOK FLAG ID '=' '{' VAL1 '}'
-    | COOK dt ID '=' '[' VAL1 ']'
-    | COOK ID '=' '(' VAL1 ')'
-    | COOK STR_FLAG ID
-    | COOK NUM_FLAG ID
-    | COOK FLAG ID
-    | COOK NUM_FLAG ID
+    | COOK NUM_FLAG ID '=' VAL2
+    | COOK FLAG ID '=' VAL3
+    | COOK NUM_FLAG ID '=' '{' VAL4 '}'
+    | COOK STR_FLAG ID '=' '{' VAL5 '}'
+    | COOK FLAG ID '=' '{' VAL6 '}'
+    | COOK ID '=' '[' VAL7 ']'
+    | COOK ID '=' '(' VAL7 ')'
     | COOK STR_FLAG ID
     | COOK FLAG ID
     | COOK dt ID
     | COOK ID
     | ID '=' VAL1
-    | ID '=' VAL1
-    | ID '=' VAL1
-    | ID '=' '{' VAL1 '}'
-    | ID '=' '{' VAL1 '}'
-    | ID '=' '{' VAL1 '}'
-    | dt ID '=' '[' VAL1 ']'
-    | ID '=' '(' VAL1 ')'
-    | ECHO '('  ')'
+    | ID '=' VAL2
+    | ID '=' VAL3
+    | ID '=' '[' VAL7 ']'
+    | ECHO '(' ')'
     ;
 
 
@@ -182,14 +169,21 @@ VAL3:
     ;
 
 VAL4:
-    VAL1 ',' VAL4
-    | VAL2 ',' VAL4
-    | VAL3 ',' VAL4
-    | VAL1
-    | VAL2
-    | VAL3
+    VAL2 VAL4_T
+    | /* empty */
     ;
-
+VAL4_T:
+    ',' VAL4
+    | /* empty */
+    ;
+VAL5:
+    VAL1 VAL5_T
+    | /* empty */
+    ;
+VAL5_T:
+    ',' VAL5
+    | /* empty */
+    ;
 VAL6:
     VAL3 VAL6_T
     | /* empty */
@@ -213,7 +207,13 @@ VAL7:
 
 // Lexical part
 _digit : [0-9];
-VAL1: '\"' [^'\"] '\"'
+VAL1: '\"' [^'\"'] '\"'
     ;
 NUM_FLAG:   [1-9]
+    ;
+
+STR_FLAG: "str"
+    ;
+
+ID: [a-zA-Z_]+[a-zA-Z_0-9]*
     ;
