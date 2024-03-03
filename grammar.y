@@ -1,10 +1,31 @@
 %{
-package main
+#include <stdio.h>
+#include <stdlib.h>
 %}
 
 %token FUNC
-%token ID NUM_FLAG STR_FLAG BOOL MAIN_TOKEN
+%token ID NUM_FLAG STR_FLAG BOOL MAIN_TOKEN CONST FLAG
 %token FLOOP WLOOP COOK GE LE NEQ GT LT IF ELSE ELSE_IF AND OR INC DEC TRUE FALSE ECHO
+
+%start program
+
+%type <ival> e1
+%type <sval> dt
+%type <ival> stmts
+%type <ival> floop wloop assign cond c exp f1 op if_cond else_if_cond else_cond iter stmt l
+
+%left ADDOP SUBOP
+%left MULOP DIVOP
+%left AND OR
+%left EQ NEQ LT LE GT GE
+%left '(' ')'
+%left ','
+%left '='
+%left IF ELSE WHILE FOR RETURN BREAK CONTINUE '{' '}'
+%nonassoc  ELSE '!'
+%token <ival> NUM
+%token <ival> FLAG
+%token <sval> VAL1
 
 %%
 
@@ -158,6 +179,7 @@ l:
     | ECHO '(' ')'
     ;
 
+
 VAL2:
     NUM
     ;
@@ -166,8 +188,6 @@ NUM:
     NUM_FLAG {_digit}
     | _digit
     ;
-
-
 
 VAL3:
     TRUE
@@ -205,78 +225,5 @@ VAL7:
 %%
 
 // Lexical part
-_digit : [ '0'-'9' ];
+_digit : [0-9];
 
-%token FUNC
-%token ID NUM_FLAG STR_FLAG BOOL MAIN_TOKEN CONST
-%token FLOOP WLOOP COOK GE LE NEQ GT LT IF ELSE ELSE_IF AND OR INC DEC TRUE FALSE ECHO
-
-%start program
-
-%type <ival> e1
-%type <sval> dt
-%type <ival> stmts
-%type <ival> floop wloop assign cond c exp f1 op if_cond else_if_cond else_cond iter stmt l
-
-%left ADDOP
-%left SUBOP
-%left MULOP
-%left DIVOP
-
-%right UMINUS
-
-%left AND
-%left OR
-
-%left EQ
-%left NEQ
-%left LT
-%left LE
-%left GT
-%left GE
-
-%left '(' ')'
-
-%left ','
-
-%left '='
-
-%left IF
-
-%left ELSE
-
-%left WHILE
-
-%left FOR
-
-%left RETURN
-
-%left BREAK
-
-%left CONTINUE
-
-%left '{' '}'
-
-%nonassoc IFX
-
-%nonassoc ELSE
-
-%nonassoc UMINUS
-
-%nonassoc '!'
-
-%token <ival> NUM
-%token <ival> FLAG
-%token <sval> VAL1
-
-%left '+' '-'
-%left '*' '/'
-%right '^'
-
-%nonassoc '(' ')'
-
-%nonassoc '[' ']'
-
-%nonassoc '{' '}'
-
-%nonassoc ','
