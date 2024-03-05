@@ -1,4 +1,4 @@
-func main(){
+func num main(){
 cook char c1;
 c1='a';
 cook char c2='b';
