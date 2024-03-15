@@ -1,4 +1,5 @@
 func str strval(num {} array,num k){
+
     cook flag b=true;
     cook str string="";
     floop(cook num i=0;i<=len(array);i++){
@@ -19,9 +20,6 @@ func str strval(num {} array,num k){
 
 func void makeFunc(){
     cook str name="Pratham Sagar";
-    func display_name(){
-        echo(name);
-    }
     return display_name;
 }
 
@@ -32,7 +30,7 @@ func num main(){
     cook num arr={1,2,3};
     cook str stt=strval(arr,len(arr));
     cook tup=( 1 , "A" , 3 , "C" , stt[3:5]);
-    cook lst=[ strval(arr,len(arr)) , 2 , 3]
+    cook lst=[ 1 , 2 , 3];
 
     cook flag fav=false;
     if(stt=="xba"){
@@ -53,20 +51,20 @@ func num main(){
     cook num neg_number = -10;
     cook num start=2;
     cook num end=4;
-    cook str this_will_be_sliced="Slice Me Daddy !"
+    cook str this_will_be_sliced="Slice Me Daddy !";
     cook str sliced_string=this_will_be_sliced[ start : end ];
 
     if(a%2 == (1)){ 
         isIt = true; 
         }
     
-    cook str string_with_esc= 
+    cook str string_with_esc= "a";
 
     try{
-        cook do_division =  100/0;
+        cook num do_division =  100/0;
     }
     catch{
-        throw("Don't divide by 0 ! ")
+        throw("Don't divide by 0 ! ");
     }
 
 }

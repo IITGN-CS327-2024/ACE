@@ -22,6 +22,15 @@ wloop : "wloop"  "("  cond  ")"  "{"  stmts  "}"
 assign : "cook" datatype IDENTIFIER "=" CONST | "cook" datatype IDENTIFIER "=" exp | IDENTIFIER "=" CONST | IDENTIFIER "=" exp | IDENTIFIER "++" | IDENTIFIER "--"
 cond : "!" c | c
 
+binary_exp: binary_exp binary_op binary_exp
+          | "(" binary_exp ")" | "!"binary_exp
+          | "true"
+          |"false"
+          |IDENTIFIER
+
+binary_op: "||" | "&&" | "==" | "!=" 
+
+
 c : "(" c ")" | exp comp exp | "true" | "false" | c "||" c | c "&&" c
 comp : ">=" | "<=" | "!=" | ">" | "<" | "==" | 
 exp : (IDENTIFIER | IDENTIFIER "[" exp "]" | CONST | "(" exp ")" | exp op exp)* 
@@ -105,6 +114,6 @@ if __name__ == '__main__':
     # Take the contents of the file and give it as input to the parser
     sentence = open(file, 'r',encoding="utf8").read()
     
-    parser = Lark(grammar, start='start', parser='earley' ,ambiguity='explicit')
+    parser = Lark(grammar, start='start', parser='lalr' ,debug=True)
     print(parser.parse(sentence).pretty())
 
