@@ -682,45 +682,14 @@ class ToAst(Transformer):
     
 transformer = ast_utils.create_transformer(this_module, ToAst())
 
-tokens = []
-
-class TypeLexer(Lexer):
-    def __init__(self, lexer_conf):
-        pass
-
-    def lex(self, data):
-        for i in range(len(tokens)):
-            token_class = tokens[i][0]
-            token_value = tokens[i][1]
-
-            yield Token(token_class, token_value)
-
-
 def parse(text):
     parser = Lark(grammar, parser="lalr")
     tree = parser.parse(text)
     p = transformer.transform(tree)
     return p
 
-                
-def create_graph(tree, graph=None):
-    if graph is None:
-        graph = Digraph()
-
-    if isinstance(tree, ASTNode):
-        children = vars(tree).items()
-        for _,child in children:
-            if isinstance(child, ASTNode):
-                graph.node(str(id(child)), label = str(child), filled='true')
-                graph.edge(str(id(tree)), str(id(child)))
-                create_graph(child, graph)
-
-            else:
-                graph.node(str(id(child)), label=str(child), shape='box', filled='true')
-                graph.edge(str(id(tree)), str(id(child)))
-    return graph  
-
-def create_graph2(tree, graph=None,parent=None):
+            
+def create_ast(tree, graph=None,parent=None):
     if isinstance(tree, ASTNode)==False:
         graph.node(str(id(tree)), label=str(tree), shape='box', filled='true')
         graph.edge(str(id(parent)), str(id(tree)))
@@ -733,22 +702,22 @@ def create_graph2(tree, graph=None,parent=None):
             parent = tree
             graph.node(str(id(parent)), label=str(parent), filled='true')
             for _, child in children:
-                create_graph2(child,graph,tree)
+                create_ast(child,graph,tree)
         else:
             if (type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 for _, child in children:
-                    create_graph2(child,graph,tree)
+                    create_ast(child,graph,tree)
             elif child_count==1:
                 for _, child in children:
                     if isinstance(child, ASTNode):
-                        create_graph2(child,graph,parent)
+                        create_ast(child,graph,parent)
             else:
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 for _, child in children:
-                    create_graph2(child,graph,tree)
+                    create_ast(child,graph,tree)
                 
     return graph
                 
@@ -767,10 +736,8 @@ if __name__ == '__main__':
             test_program = sentence
         parser = Lark(grammar, start='program', parser='lalr')
         tree = parser.parse(sentence)
-        print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The Parse Tree and AST files have been created.\n")
-        graph=create_graph(parse(test_program))
-        graph.render('Parse Tree.gv', view=True)
-        graph=create_graph2(parse(test_program))
+        print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
+        graph=create_ast(parse(test_program))
         graph.render('AST.gv', view=True)
         
     except FileNotFoundError:
