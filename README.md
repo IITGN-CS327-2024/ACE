@@ -1,5 +1,13 @@
 ## Group 7 
 
+To run the AST_Generator.py file type
+
+```
+python AST_Generator.py test_cases/test1.ace
+```
+in shell.
+
+
 To run the lalr_parser.py file type
 
 ```
