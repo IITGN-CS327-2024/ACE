@@ -21,12 +21,12 @@ start: program
 program: function_decl_list 
 function_decl_list:  main_function |  ( function_decl )* 
 main_function: "func" "num" "main" "(" ")" "{" stmts "}"
-function_decl:  "func" datatype IDENTIFIER "(" params ")" "{" stmts "}" 
+function_decl:  "func" dt_identifier "(" params ")" "{" stmts "}" 
 
 
 
 params: (param ("," param)*)? 
-param: datatype IDENTIFIER  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER 
+param: dt_identifier  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER 
 datatype: NUM | STR | VOID | CHAR | FLAG
 stmts: (stmt ";" | function_decl | floop  |  wloop  |  if_else_block  |  trycatchblock | iter ";" )*
 trycatchblock: try_ catch?
@@ -37,7 +37,7 @@ catch :  "catch"  "{"  stmts  "}"
 throw : "throw"  "("  VAL1  ")" 
 floop : "floop"  "("  assign  ";"  cond  ";"  iter  ")"  "{"  stmts  "}"
 wloop : "wloop"  "("  cond  ")"  "{"  stmts  "}" 
-assign : "cook" datatype IDENTIFIER "=" exp 
+assign : "cook" dt_identifier "=" exp 
         | IDENTIFIER "=" exp -> a2
         | IDENTIFIER INC -> a3
         | IDENTIFIER DEC
@@ -48,7 +48,7 @@ c : "(" c ")" | (exp | LEN "(" IDENTIFIER ")" | HEADOF "(" IDENTIFIER ")" | TAIL
 comp : GTE | LTE | NEQL | LT | GT | EQL  
 exp : (IDENTIFIER | IDENTIFIER "[" (VAL2 | IDENTIFIER) "]" | "(" exp ")" | (exp | int_exp) op (exp| int_exp))? | exp1
 exp1: "(" exp1 ")" | CONST 
-e1: ((datatype IDENTIFIER  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER ) e2*)*
+e1: ((dt_identifier  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER ) e2*)*
 e2: ("," e1)
 op: PLUS | MINUS | MUL | DIV | POW | BWAND | BWOR | XOR | MODULO
 
@@ -68,29 +68,31 @@ print : ((IDENTIFIER | CONST) ("," print)?  |  ("," print)? | (IDENTIFIER | CONS
 
 to_print: "echo" "(" print ")"
 
-l1:  "cook" datatype IDENTIFIER "=" VAL2 ":" ":" IDENTIFIER
+l1:  "cook" dt_identifier "=" VAL2 ":" ":" IDENTIFIER
     | IDENTIFIER "=" VAL2 ":" ":" IDENTIFIER
     | l
 
-l:"cook" datatype IDENTIFIER "=" "{" val11 "}" 
+l:"cook" dt_identifier "=" "{" val11 "}" 
     | "cook" IDENTIFIER "=" "[" val7 "]"
     | "cook" IDENTIFIER "=" "(" val7 ")"
-    | "cook" datatype IDENTIFIER
-    | "cook" datatype IDENTIFIER "[" IDENTIFIER "]"
-    | "cook" datatype IDENTIFIER "[" int_exp "]"
+    | "cook" dt_identifier
+    | "cook" dt_identifier "[" IDENTIFIER "]"
+    | "cook" dt_identifier "[" int_exp "]"
     | IDENTIFIER "=" "[" val7 "]"
     | IDENTIFIER "=" ( binary_exp)
     | IDENTIFIER "=" IDENTIFIER "[" int_exp "]"
     | IDENTIFIER "=" IDENTIFIER "(" val7 ")"
-    | "cook" datatype IDENTIFIER "=" ( binary_exp | VAL1 | VAL9 )
-    | "cook" datatype IDENTIFIER "=" "[" val7 "]"
-    | "cook" datatype IDENTIFIER "=" IDENTIFIER "[" int_exp "]"
-    | "cook" datatype IDENTIFIER "=" IDENTIFIER "(" val7 ")"
-    | "cook" datatype IDENTIFIER "=" IDENTIFIER "("  ")"
-    | "cook" datatype IDENTIFIER "=" IDENTIFIER "[" exp? ":" exp? "]"
-    | "cook" datatype IDENTIFIER "=" VAL1 "[" exp? ":" exp? "]"
+    | "cook" dt_identifier "=" ( binary_exp | VAL1 | VAL9 )
+    | "cook" dt_identifier "=" "[" val7 "]"
+    | "cook" dt_identifier "=" IDENTIFIER "[" int_exp "]"
+    | "cook" dt_identifier "=" IDENTIFIER "(" val7 ")"
+    | "cook" dt_identifier "=" IDENTIFIER "("  ")"
+    | "cook" dt_identifier "=" IDENTIFIER "[" exp? ":" exp? "]"
+    | "cook" dt_identifier "=" VAL1 "[" exp? ":" exp? "]"
     | to_print
     | throw 
+
+dt_identifier : datatype IDENTIFIER
 
 slicing: IDENTIFIER "[" exp? ":" exp? "]"
        | VAL1 "[" exp? ":" exp? "]"
@@ -328,7 +330,17 @@ class ListItems(ASTNode):
     def __init__(self, values):
         for i, value in enumerate(values):
             setattr(self, f'{i}', value)
+            
+class DT_IDENTIFIER(ASTNode):
+    def __init__(self, values):
+        for i, value in enumerate(values):
+            setattr(self, f'{i}', value)
                         
+class IDENTIFIER(ASTNode):
+    def __init__(self, value):
+        self.value = value                        
+                        
+            
 def single_list(_list):
     combined_list = []
     for entry in _list:
@@ -346,6 +358,10 @@ def to_list(our_tree):
         for child in our_tree.children:
             ls1= to_list(child)
             ls += ls1
+            
+    elif(isinstance(our_tree, lark.lexer.Token)):
+        ls.append(our_tree.value)
+    
     elif(isinstance(our_tree, list)):
         for child in our_tree:
             ls1= to_list(child)
@@ -599,6 +615,13 @@ class ToAst(Transformer):
         # print(items)
         return Assign(items)
     
+    def dt_identifier(self, items):
+        lst=[]
+        for i in items:
+            lst+=to_list(i)
+        items=lst
+        return DT_IDENTIFIER(items)
+    
     def slicing(self, items):
         lst=[]
         for i in items:
@@ -672,6 +695,9 @@ class ToAst(Transformer):
             lst+=to_list(i)
         items=lst
         return IfElseBlock(items)
+    
+    def IDENTIFIER(self,items):
+        return self.create_node(items, IDENTIFIER)
     
     def trycatchblock(self,items):
         lst=[]
