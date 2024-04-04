@@ -1,4 +1,4 @@
-func str strval(num {} array,num k){
+func str strval(num {} array,num k1){
     cook flag b=true;
     cook str string="";
     floop(cook num i=0;i<=len(array);i++){

@@ -85,7 +85,7 @@ l:"cook" dt_identifier "=" "{" val11 "}"
     | "cook" dt_identifier "=" ( binary_exp | VAL1 | VAL9 )
     | "cook" dt_identifier "=" "[" val7 "]"
     | "cook" dt_identifier "=" IDENTIFIER "[" int_exp "]"
-    | "cook" dt_identifier "=" FUNC_IDENTIFIER "(" val7 ")"
+    | "cook" dt_identifier "=" IDENTIFIER "(" val7 ")"
     | "cook" dt_identifier "=" IDENTIFIER "("  ")"
     | "cook" dt_identifier "=" IDENTIFIER "[" exp? ":" exp? "]"
     | "cook" dt_identifier "=" VAL1 "[" exp? ":" exp? "]"
@@ -830,7 +830,7 @@ class scopecheck:
     def check_scope(self, symbol):
         return symbol in self.scope
     
-    def dfs_traverse(self,edge_list,node, visited=None):
+    def dfs_traverse(self,edge_list,node, visited=None,node_type=None):
         if visited is None:
             visited = set()
         if node in visited:
@@ -838,17 +838,41 @@ class scopecheck:
         if node not in edge_list.keys():
             return
         children = edge_list[node]
+        if(node_type=='FunctionDeclaration'):
+            dt_id=children[0]
+            identifier=edge_list[dt_id[0]][1][0]
+            idd=edge_list[identifier]
+            self.func_list.append(idd[0][1])
+            # print(self.func_list)
+        if(node_type=='Param'):
+            child=edge_list[node]
+            # print(child)
+            idd = edge_list[child[1][0]][0]
+            self.add_symbol(idd[1])
+            return
+        if(node_type=='Params'):
+            child1=edge_list[node]
+            child=edge_list[child1[1][0]]
+            # child=edge_list[node]
+            # print(child)
+            idd = edge_list[child[1][0]][0]
+            self.add_symbol(idd[1])
+
         for child in children:
             # print(child[1])
+            if(node_type=='Params') and child[1]!='Param':
+                continue
+
             if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
                 self.enter_scope()
-                self.dfs_traverse(edge_list,child[0], visited)
+                self.dfs_traverse(edge_list,child[0], visited,child[1])
                 self.exit_scope()
             elif(child[1]=="DT_IDENTIFIER"):
                 identifier=edge_list[child[0]][1]
                 identifier_id=identifier[0]
                 idd=edge_list[identifier_id][0][1]
                 check=self.check_scope(idd)
+                # print(idd)
                 if not check:
                     self.add_symbol(idd)
                 else:
@@ -858,7 +882,9 @@ class scopecheck:
                 check=self.check_symbol(edge_list[child[0]][0][1])
                 idd = edge_list[child[0]][0][1]
                 if not check:
-                    print(f"Error: {idd} not declared in the scope")
+                    if idd not in self.func_list:
+                        print(f"Error: {idd} not declared in the scope")
+                
             elif(child[1]=="ListTupleIdentifier"):
                 identifier=edge_list[child[0]][0]
                 identifier_id=identifier[1]
@@ -870,7 +896,7 @@ class scopecheck:
                 else:
                     print(f"Error: {identifier_id} already declared in the same scope")
             else:
-                self.dfs_traverse(edge_list, child[0], visited)
+                self.dfs_traverse(edge_list, child[0], visited,child[1])
 
 if __name__ == '__main__':
     
