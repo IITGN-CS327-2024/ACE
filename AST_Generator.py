@@ -9,7 +9,7 @@ from lark.tree import Meta
 import networkx as nx
 import matplotlib.pyplot as plt
 from graphviz import Digraph
-
+import re
 this_module = sys.modules[__name__]
 
 #
@@ -775,7 +775,7 @@ def create_ast(tree, edge_list,graph=None,parent=None):
             for _, child in children:
                 create_ast(child,edge_list,graph,tree)
         else:
-            if (type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
+            if (type(tree)== Params or type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 if str(id(parent)) in edge_list.keys():
@@ -852,11 +852,10 @@ class scopecheck:
             return
         if(node_type=='Params'):
             child1=edge_list[node]
-            child=edge_list[child1[1][0]]
-            # child=edge_list[node]
-            # print(child)
-            idd = edge_list[child[1][0]][0]
-            self.add_symbol(idd[1])
+            for child in child1:
+                child=edge_list[child[0]]
+                idd = edge_list[child[1][0]][0]
+                self.add_symbol(idd[1])
 
         for child in children:
             # print(child[1])
@@ -903,7 +902,7 @@ class TypeCheck:
     def __init__(self,tree):
         self.tree=tree
         self.scopes = []
-        self.func_list = []
+        self.func_list = {}
     
     def enter_scope(self):
         self.scope = {}
@@ -927,19 +926,22 @@ class TypeCheck:
         return symbol in self.scope
     
     def check_type(self, exp):
+        pattern = r'^[+-]?\d+$'
+        f = bool(re.match(pattern, exp))
         if (exp[0]=="\'"):
             return "char"
         elif (exp[0]=="\""):
             return "str"
-        elif (isinstance(exp[0], int)):
+        elif (f):
             return "num"
         elif (exp=="true" or exp=="false"):
             return "flag"
+        elif exp in self.func_list.keys():
+            return self.func_list[exp]
         else:
             return "other"
-            
     
-    def dfs_traverse(self,edge_list,node, visited=None):
+    def dfs_traverse(self,edge_list,node, visited=None,node_type=None):
         if visited is None:
             visited = set()
         if node in visited:
@@ -947,78 +949,99 @@ class TypeCheck:
         if node not in edge_list.keys():
             return
         children = edge_list[node]
+
+        if(node_type=='FunctionDeclaration'):
+            dt_id=children[0]
+            identifier=edge_list[dt_id[0]][1][0]
+            idd=edge_list[identifier]
+            rttype=edge_list[dt_id[0]][0][0]
+            rt=edge_list[rttype]
+            self.func_list[idd[0][1]]=rt[0][1]
+        if(node_type=='Param'):
+            child=edge_list[node]
+            # print(child)
+            idd = edge_list[child[1][0]][0]
+            dt= edge_list[child[0][0]][0]
+            # check=self.check_type(dt[1])
+            # print(dt[1],idd[1])
+            self.add_symbol_type(idd[1],dt[1])
+            return
+        if(node_type=='Params'):
+            child1=edge_list[node]
+            for child in child1:
+                child=edge_list[child[0]]
+                idd = edge_list[child[1][0]][0]
+                dt= edge_list[child[0][0]][0]
+                self.add_symbol_type(idd[1],dt[1])
         for child in children:
-            print("H!")
-            print(child[1])
+            # print("H!")
+            # print(child[1])
             if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
-                print("a")
+     
                 self.enter_scope()
-                self.dfs_traverse(edge_list,child[0], visited)
+                self.dfs_traverse(edge_list,child[0], visited,child[1])
                 self.exit_scope()
                 
             elif (child[1]=="Assign"):
-                print("b")
                 identifier=edge_list[child[0]][0]
                 child_name = identifier[1]
                 
                 exp = edge_list[child[0]][1]
                 exp_id=exp[0]
                 exp_val=edge_list[exp_id][0][1]
-                print("f")
-                print(child_name)
                 if (child_name=="IDENTIFIER"):
-                    print('c')
-                    print("22")
                     identifier_id=identifier[0]
                     idd=edge_list[identifier_id][0][1]
                     type_idd = self.check_symbol_type(idd)
                     
                     type_exp = self.check_type(exp_val)
-                    
                     if (type_idd != type_exp):
+                        print(2)
                         print(f"Error: Type of {idd}: {type_idd} is different from type of {exp_val}: {type_exp}")
-                    else:
-                        print("11")
+                   
                 elif (child_name=="DT_IDENTIFIER"):
-                    print('d')
                     identifier=edge_list[child[0]][1]
                     identifier_id=identifier[0]
                     idd=edge_list[identifier_id][0][1]
                     
                     dt = edge_list[child[0]][0]
-                    print(dt)
                     dt_id=dt[0]
-                    print(dt_id)
                     type2=edge_list[dt_id][0][0]
-                    print(type2)
                     type=edge_list[type2][0][1]
-                    print(type)
                     
                     id1 = edge_list[child[0]][0]
-                    print(id1)
                     id1_id = id1[0]
-                    print(id1_id)
                     var_id2 =edge_list[id1_id][1][0]
-                    print(var_id2)
                     var_id=edge_list[var_id2][0][1]
-                    print(var_id)
                     
-                    
-                    check=self.check_scope(idd)
+                    print(idd)
+                    check=self.check_scope(var_id)
                     if not check:
-                        self.add_symbol_type(idd, type)
+                        self.add_symbol_type(var_id, type)
                     else:
-                        print(f"Error: {idd} already declared in the same scope")
+                        print(f"Error: {var_id} already declared in the same scope")
                         
                     type_exp = self.check_type(exp_val)
                     
                     if (type_exp != type):
                         print(f"Error: Type of {var_id}: {type} is different from type of {exp_val}: {type_exp}")                        
+                elif(child_name=="ListTupleIdentifier"):
+                    
+                    index=edge_list[child[0]][0]
+                    idd=edge_list[index[0]][0][1]
+                    check=self.check_scope(idd)
+                    if not check:
+                        self.add_symbol_type(idd,"tuple")
                     else:
-                        print("HOHOH")
-                               
+                        print(f"Error: {idd} already declared in the same scope")
+                    
+                    
+                    index2=edge_list[child[0]][1]
+                    idd2=index2[1]
+                    if(idd2 !="ListItems"):
+                        print(f"{idd} declared of type tuple initially !")
+
             elif(child[1]=="DT_IDENTIFIER"):
-                print("e")
                 identifier=edge_list[child[0]][1]
                 identifier_id=identifier[0]
                 idd=edge_list[identifier_id][0][1]
@@ -1030,30 +1053,16 @@ class TypeCheck:
                 check=self.check_scope(idd)
                 if not check:
                     self.add_symbol_type(idd, type)
-                    print("HOHOH")
                 else:
                     print(f"Error: {idd} already declared in the same scope")
 
             elif(child[1]=="IDENTIFIER"):
-
-                print("f1")
                 check=self.check_symbol_type(edge_list[child[0]][0][1])
                 idd = edge_list[child[0]][0][1]
                 if not check:
                     print(f"Error: {idd} not declared in the scope")
-            # elif(child[1]=="ListTupleIdentifier"):
-            #     identifier=edge_list[child[0]][0]
-            #     identifier_id=identifier[1]
-            #     # idd=edge_list[identifier_id][0][0]
-            #     check=self.check_scope(identifier_id)
-            #     # print(identifier_id)
-            #     if not check:
-            #         self.add_symbol_type(identifier_id, type)
-            #     else:
-            #         print(f"Error: {identifier_id} already declared in the same scope")
             else:
-                print("g")
-                self.dfs_traverse(edge_list, child[0], visited)
+                self.dfs_traverse(edge_list, child[0], visited,child[1])
 
 
 if __name__ == '__main__':
@@ -1077,7 +1086,7 @@ if __name__ == '__main__':
         scopecheck1=scopecheck(edge_list)
         startId=list(edge_list.keys())[0]
         scopecheck1.dfs_traverse(edge_list,startId)
-        
+        print("-------------scope cheking done----------------")
         typeCheck1 = TypeCheck(edge_list)
         typeCheck1.dfs_traverse(edge_list, startId)
 
