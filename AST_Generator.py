@@ -73,8 +73,8 @@ l1:  "cook" dt_identifier "=" VAL2 ":" ":" IDENTIFIER
     | l
 
 l:"cook" dt_identifier "=" "{" val11 "}" 
-    | "cook" IDENTIFIER "=" "[" val7 "]"
-    | "cook" IDENTIFIER "=" "(" val7 ")"
+    | "cook" LIST_TUPLE_ID "=" "[" val7 "]"
+    | "cook" LIST_TUPLE_ID "=" "(" val7 ")"
     | "cook" dt_identifier
     | "cook" dt_identifier "[" IDENTIFIER "]"
     | "cook" dt_identifier "[" int_exp "]"
@@ -91,6 +91,8 @@ l:"cook" dt_identifier "=" "{" val11 "}"
     | "cook" dt_identifier "=" VAL1 "[" exp? ":" exp? "]"
     | to_print
     | throw 
+
+LIST_TUPLE_ID: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 
 dt_identifier : datatype IDENTIFIER
 
@@ -342,7 +344,13 @@ class DT_IDENTIFIER(ASTNode):
             else:
                 setattr(self, f'{i}', IDENTIFIER(value))
 
-                        
+class ListTupleIdentifier(ASTNode):
+    def __init__(self, value):
+        str=""
+        for i in value:
+            str+=i
+        self.value = str
+                     
 class IDENTIFIER(ASTNode):
     def __init__(self, value):
         str=""
@@ -715,6 +723,8 @@ class ToAst(Transformer):
             lst+=to_list(i)
         items=lst
         return TryCatchBlock(items)
+    def LIST_TUPLE_ID(self,items):
+        return self.create_node(items, ListTupleIdentifier)
     
 transformer = ast_utils.create_transformer(this_module, ToAst())
 
@@ -746,7 +756,7 @@ def create_ast(tree, edge_list,graph=None,parent=None):
             for _, child in children:
                 create_ast(child,edge_list,graph,tree)
         else:
-            if (type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw):
+            if (type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 if str(id(parent)) in edge_list.keys():
@@ -829,6 +839,16 @@ class scopecheck:
                 idd = edge_list[child[0]][0][1]
                 if not check:
                     print(f"Error: {idd} not declared in the scope")
+            elif(child[1]=="ListTupleIdentifier"):
+                identifier=edge_list[child[0]][0]
+                identifier_id=identifier[1]
+                # idd=edge_list[identifier_id][0][0]
+                check=self.check_scope(identifier_id)
+                # print(identifier_id)
+                if not check:
+                    self.add_symbol(identifier_id)
+                else:
+                    print(f"Error: {identifier_id} already declared in the same scope")
             else:
                 self.dfs_traverse(edge_list, child[0], visited)
 
@@ -850,11 +870,8 @@ if __name__ == '__main__':
         print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
         graph =create_ast(parse(test_program),edge_list)
         graph.render('AST.gv', view=True)
-        print(1)
-        # print(edge_list)
         scopecheck1=scopecheck(edge_list)
         startId=list(edge_list.keys())[0]
-        print(startId)
         scopecheck1.dfs_traverse(edge_list,startId)
         
         
