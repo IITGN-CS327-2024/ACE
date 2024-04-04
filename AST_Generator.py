@@ -85,7 +85,7 @@ l:"cook" dt_identifier "=" "{" val11 "}"
     | "cook" dt_identifier "=" ( binary_exp | VAL1 | VAL9 )
     | "cook" dt_identifier "=" "[" val7 "]"
     | "cook" dt_identifier "=" IDENTIFIER "[" int_exp "]"
-    | "cook" dt_identifier "=" IDENTIFIER "(" val7 ")"
+    | "cook" dt_identifier "=" FUNC_IDENTIFIER "(" val7 ")"
     | "cook" dt_identifier "=" IDENTIFIER "("  ")"
     | "cook" dt_identifier "=" IDENTIFIER "[" exp? ":" exp? "]"
     | "cook" dt_identifier "=" VAL1 "[" exp? ":" exp? "]"
@@ -93,6 +93,8 @@ l:"cook" dt_identifier "=" "{" val11 "}"
     | throw 
 
 LIST_TUPLE_ID: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
+FUNC_IDENTIFIER: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
+FUNC_DECL_IDENTIFIER : /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 
 dt_identifier : datatype IDENTIFIER
 
@@ -358,7 +360,20 @@ class IDENTIFIER(ASTNode):
             str+=i
         self.value = str                        
                         
+class FUNC_IDENTIFIER(ASTNode):
+    def __init__(self, value):
+        str=""
+        for i in value:
+            str+=i
+        self.value = str
             
+class FUNC_DECL_IDENTIFIER(ASTNode):
+    def __init__(self, value):
+        str=""
+        for i in value:
+            str+=i
+        self.value = str
+
 def single_list(_list):
     combined_list = []
     for entry in _list:
@@ -725,6 +740,10 @@ class ToAst(Transformer):
         return TryCatchBlock(items)
     def LIST_TUPLE_ID(self,items):
         return self.create_node(items, ListTupleIdentifier)
+    def FUNC_IDENTIFIER(self,items):
+        return self.create_node(items, FUNC_IDENTIFIER)
+    def FUNC_DECL_IDENTIFIER(self,items):
+        return self.create_node(items, FUNC_DECL_IDENTIFIER)
     
 transformer = ast_utils.create_transformer(this_module, ToAst())
 
@@ -788,6 +807,7 @@ class scopecheck:
     def __init__(self,tree):
         self.tree=tree
         self.scopes = []
+        self.func_list = []
     
     def enter_scope(self):
         self.scope = {}
