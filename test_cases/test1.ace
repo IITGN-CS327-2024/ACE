@@ -3,9 +3,9 @@ cook char c1;
 c1='a';
 cook char c2='b';
 cook str s1;
-cook num d1= a + b ;
 s1="abc";
 cook str s2="def";
 cook tup=( 1 , "A" , 3 , "C" , 5 );
+tup = 5;
 cook num arr2={ 1 , 2 , 3 , 4 , 5};
 }

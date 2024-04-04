@@ -930,11 +930,11 @@ class TypeCheck:
         if (exp[0]=="\'"):
             return "char"
         elif (exp[0]=="\""):
-            return "string"
+            return "str"
         elif (isinstance(exp[0], int)):
             return "num"
         elif (exp=="true" or exp=="false"):
-            return "bool"
+            return "flag"
         else:
             return "other"
             
@@ -948,25 +948,29 @@ class TypeCheck:
             return
         children = edge_list[node]
         for child in children:
-            # print(child[1])
+            print("H!")
+            print(child[1])
             if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
+                print("a")
                 self.enter_scope()
                 self.dfs_traverse(edge_list,child[0], visited)
                 self.exit_scope()
                 
             elif (child[1]=="Assign"):
+                print("b")
                 identifier=edge_list[child[0]][0]
                 child_name = identifier[1]
                 
-                exp = edge_list[child[0]][0]
+                exp = edge_list[child[0]][1]
                 exp_id=exp[0]
                 exp_val=edge_list[exp_id][0][1]
                 print("f")
                 print(child_name)
                 if (child_name=="IDENTIFIER"):
+                    print('c')
                     print("22")
                     identifier_id=identifier[0]
-                    idd=edge_list[identifier_id][0][0]
+                    idd=edge_list[identifier_id][0][1]
                     type_idd = self.check_symbol_type(idd)
                     
                     type_exp = self.check_type(exp_val)
@@ -975,14 +979,30 @@ class TypeCheck:
                         print(f"Error: Type of {idd}: {type_idd} is different from type of {exp_val}: {type_exp}")
                     else:
                         print("11")
-                else:
+                elif (child_name=="DT_IDENTIFIER"):
+                    print('d')
                     identifier=edge_list[child[0]][1]
                     identifier_id=identifier[0]
                     idd=edge_list[identifier_id][0][1]
                     
                     dt = edge_list[child[0]][0]
+                    print(dt)
                     dt_id=dt[0]
-                    type=edge_list[dt_id][0][1]
+                    print(dt_id)
+                    type2=edge_list[dt_id][0][0]
+                    print(type2)
+                    type=edge_list[type2][0][1]
+                    print(type)
+                    
+                    id1 = edge_list[child[0]][0]
+                    print(id1)
+                    id1_id = id1[0]
+                    print(id1_id)
+                    var_id2 =edge_list[id1_id][1][0]
+                    print(var_id2)
+                    var_id=edge_list[var_id2][0][1]
+                    print(var_id)
+                    
                     
                     check=self.check_scope(idd)
                     if not check:
@@ -993,11 +1013,12 @@ class TypeCheck:
                     type_exp = self.check_type(exp_val)
                     
                     if (type_exp != type):
-                        print(f"Error: Type of {idd}: {type} is different from type of {exp_val}: {type_exp}")                        
+                        print(f"Error: Type of {var_id}: {type} is different from type of {exp_val}: {type_exp}")                        
                     else:
                         print("HOHOH")
-                
+                               
             elif(child[1]=="DT_IDENTIFIER"):
+                print("e")
                 identifier=edge_list[child[0]][1]
                 identifier_id=identifier[0]
                 idd=edge_list[identifier_id][0][1]
@@ -1015,6 +1036,7 @@ class TypeCheck:
 
             elif(child[1]=="IDENTIFIER"):
 
+                print("f1")
                 check=self.check_symbol_type(edge_list[child[0]][0][1])
                 idd = edge_list[child[0]][0][1]
                 if not check:
@@ -1030,6 +1052,7 @@ class TypeCheck:
             #     else:
             #         print(f"Error: {identifier_id} already declared in the same scope")
             else:
+                print("g")
                 self.dfs_traverse(edge_list, child[0], visited)
 
 
