@@ -46,7 +46,7 @@ cond : UNARY_NOT c | c
 
 c : "(" c ")" | (exp | LEN "(" IDENTIFIER ")" | HEADOF "(" IDENTIFIER ")" | TAILOF "(" IDENTIFIER ")" | VAL2 | VAL1) comp (exp | LEN "(" IDENTIFIER ")" | HEADOF "(" IDENTIFIER ")" | TAILOF "(" IDENTIFIER ")" | VAL2 | VAL1) | TRUE | FALSE | c "||" c | c "&&" c | exp 
 comp : GTE | LTE | NEQL | LT | GT | EQL  
-exp : (IDENTIFIER | IDENTIFIER "[" (VAL2 | IDENTIFIER) "]" | "(" exp ")" | (exp | int_exp) op (exp| int_exp))? | exp1
+exp : ( IDENTIFIER | IDENTIFIER "[" (VAL2 | IDENTIFIER) "]" | "(" exp ")" | (exp | int_exp) op (exp| int_exp))? | exp1
 exp1: "(" exp1 ")" | CONST 
 e1: ((dt_identifier  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER ) e2*)*
 e2: ("," e1)
@@ -156,7 +156,7 @@ MODULO : "%"
 
 
 
-IDENTIFIER: /(?<!main)[a-zA-Z_][a-zA-Z0-9_]*/
+IDENTIFIER: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 %import common.WS
 %ignore WS
 %import common.WS_INLINE
@@ -316,8 +316,10 @@ class IntTerminal(ASTNode):
         
 class StringTerminal(ASTNode):
     def __init__(self, value):
-        self.value = value
-        
+        str=""
+        for i in value:
+            str+=i
+        self.value = str
 class BoolTerminal(ASTNode):
     def __init__(self, value):
         self.value = value
@@ -330,15 +332,23 @@ class ListItems(ASTNode):
     def __init__(self, values):
         for i, value in enumerate(values):
             setattr(self, f'{i}', value)
+            # print(type(value))
             
 class DT_IDENTIFIER(ASTNode):
     def __init__(self, values):
         for i, value in enumerate(values):
-            setattr(self, f'{i}', value)
+            if(type(value)!=str):
+                setattr(self, f'{i}', value)
+            else:
+                setattr(self, f'{i}', IDENTIFIER(value))
+
                         
 class IDENTIFIER(ASTNode):
     def __init__(self, value):
-        self.value = value                        
+        str=""
+        for i in value:
+            str+=i
+        self.value = str                        
                         
             
 def single_list(_list):
@@ -714,10 +724,16 @@ def parse(text):
     p = transformer.transform(tree)
     return p
 
-            
-def create_ast(tree, graph=None,parent=None):
+
+
+def create_ast(tree, edge_list,graph=None,parent=None):
     if isinstance(tree, ASTNode)==False:
         graph.node(str(id(tree)), label=str(tree), shape='box', filled='true')
+        if str(id(parent)) in edge_list.keys():
+            edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
+        else:
+            edge_list[str(id(parent))]=[]
+            edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
         graph.edge(str(id(parent)), str(id(tree)))
     else:
         children = vars(tree).items()
@@ -728,25 +744,93 @@ def create_ast(tree, graph=None,parent=None):
             parent = tree
             graph.node(str(id(parent)), label=str(parent), filled='true')
             for _, child in children:
-                create_ast(child,graph,tree)
+                create_ast(child,edge_list,graph,tree)
         else:
             if (type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
+                if str(id(parent)) in edge_list.keys():
+                    edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
+                else:
+                    edge_list[str(id(parent))]=[]
+                    edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
                 for _, child in children:
-                    create_ast(child,graph,tree)
+                    create_ast(child,edge_list,graph,tree)
             elif child_count==1:
                 for _, child in children:
                     if isinstance(child, ASTNode):
-                        create_ast(child,graph,parent)
+                        create_ast(child,edge_list,graph,parent)
             else:
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
+                if str(id(parent)) in edge_list.keys():
+                    edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
+                else:
+                    edge_list[str(id(parent))]=[]
+                    edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
                 for _, child in children:
-                    create_ast(child,graph,tree)
+                    create_ast(child,edge_list,graph,tree)
                 
     return graph
                 
+
+class scopecheck:
+    def __init__(self,tree):
+        self.tree=tree
+        self.scopes = []
+    
+    def enter_scope(self):
+        self.scope = {}
+        self.scopes.append(self.scope)
+    
+    def exit_scope(self):
+        self.scopes.pop()
+        if self.scopes:
+            self.scope = self.scopes[-1]
+    
+    def add_symbol(self, symbol):
+        self.scope[symbol] = True
+    
+    def check_symbol(self, symbol):
+        for scope in reversed(self.scopes):
+            if symbol in scope:
+                return True
+        return False
+    
+    def check_scope(self, symbol):
+        return symbol in self.scope
+    
+    def dfs_traverse(self,edge_list,node, visited=None):
+        if visited is None:
+            visited = set()
+        if node in visited:
+            return
+        if node not in edge_list.keys():
+            return
+        children = edge_list[node]
+        for child in children:
+            # print(child[1])
+            if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
+                self.enter_scope()
+                self.dfs_traverse(edge_list,child[0], visited)
+                self.exit_scope()
+            elif(child[1]=="DT_IDENTIFIER"):
+                identifier=edge_list[child[0]][1]
+                identifier_id=identifier[0]
+                idd=edge_list[identifier_id][0][1]
+                check=self.check_scope(idd)
+                if not check:
+                    self.add_symbol(idd)
+                else:
+                    print(f"Error: {idd} already declared in the same scope")
+            elif(child[1]=="IDENTIFIER"):
+
+                check=self.check_symbol(edge_list[child[0]][0][1])
+                idd = edge_list[child[0]][0][1]
+                if not check:
+                    print(f"Error: {idd} not declared in the scope")
+            else:
+                self.dfs_traverse(edge_list, child[0], visited)
 
 if __name__ == '__main__':
     
@@ -762,9 +846,17 @@ if __name__ == '__main__':
             test_program = sentence
         parser = Lark(grammar, start='program', parser='lalr')
         tree = parser.parse(sentence)
+        edge_list={}
         print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
-        graph=create_ast(parse(test_program))
+        graph =create_ast(parse(test_program),edge_list)
         graph.render('AST.gv', view=True)
+        print(1)
+        # print(edge_list)
+        scopecheck1=scopecheck(edge_list)
+        startId=list(edge_list.keys())[0]
+        print(startId)
+        scopecheck1.dfs_traverse(edge_list,startId)
+        
         
     except FileNotFoundError:
         print(f"Error: File '{file}' not found.")
@@ -778,4 +870,5 @@ if __name__ == '__main__':
             print(f"Syntax error: {e}")
             
     except Exception as e:
+        print("123")
         print(f"Error: {e}")
