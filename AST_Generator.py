@@ -898,6 +898,141 @@ class scopecheck:
             else:
                 self.dfs_traverse(edge_list, child[0], visited,child[1])
 
+
+class TypeCheck:
+    def __init__(self,tree):
+        self.tree=tree
+        self.scopes = []
+        self.func_list = []
+    
+    def enter_scope(self):
+        self.scope = {}
+        self.scopes.append(self.scope)
+    
+    def exit_scope(self):
+        self.scopes.pop()
+        if self.scopes:
+            self.scope = self.scopes[-1]
+    
+    def add_symbol_type(self, symbol, type):
+        self.scope[symbol] = type
+    
+    def check_symbol_type(self, symbol):
+        for scope in reversed(self.scopes):
+            if symbol in scope:
+                return scope[symbol]
+        return None
+    
+    def check_scope(self, symbol):
+        return symbol in self.scope
+    
+    def check_type(self, exp):
+        if (exp[0]=="\'"):
+            return "char"
+        elif (exp[0]=="\""):
+            return "string"
+        elif (isinstance(exp[0], int)):
+            return "num"
+        elif (exp=="true" or exp=="false"):
+            return "bool"
+        else:
+            return "other"
+            
+    
+    def dfs_traverse(self,edge_list,node, visited=None):
+        if visited is None:
+            visited = set()
+        if node in visited:
+            return
+        if node not in edge_list.keys():
+            return
+        children = edge_list[node]
+        for child in children:
+            # print(child[1])
+            if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
+                self.enter_scope()
+                self.dfs_traverse(edge_list,child[0], visited)
+                self.exit_scope()
+                
+            elif (child[1]=="Assign"):
+                identifier=edge_list[child[0]][0]
+                child_name = identifier[1]
+                
+                exp = edge_list[child[0]][0]
+                exp_id=exp[0]
+                exp_val=edge_list[exp_id][0][1]
+                print("f")
+                print(child_name)
+                if (child_name=="IDENTIFIER"):
+                    print("22")
+                    identifier_id=identifier[0]
+                    idd=edge_list[identifier_id][0][0]
+                    type_idd = self.check_symbol_type(idd)
+                    
+                    type_exp = self.check_type(exp_val)
+                    
+                    if (type_idd != type_exp):
+                        print(f"Error: Type of {idd}: {type_idd} is different from type of {exp_val}: {type_exp}")
+                    else:
+                        print("11")
+                else:
+                    identifier=edge_list[child[0]][1]
+                    identifier_id=identifier[0]
+                    idd=edge_list[identifier_id][0][1]
+                    
+                    dt = edge_list[child[0]][0]
+                    dt_id=dt[0]
+                    type=edge_list[dt_id][0][1]
+                    
+                    check=self.check_scope(idd)
+                    if not check:
+                        self.add_symbol_type(idd, type)
+                    else:
+                        print(f"Error: {idd} already declared in the same scope")
+                        
+                    type_exp = self.check_type(exp_val)
+                    
+                    if (type_exp != type):
+                        print(f"Error: Type of {idd}: {type} is different from type of {exp_val}: {type_exp}")                        
+                    else:
+                        print("HOHOH")
+                
+            elif(child[1]=="DT_IDENTIFIER"):
+                identifier=edge_list[child[0]][1]
+                identifier_id=identifier[0]
+                idd=edge_list[identifier_id][0][1]
+                
+                dt = edge_list[child[0]][0]
+                dt_id=dt[0]
+                type=edge_list[dt_id][0][1]
+                
+                check=self.check_scope(idd)
+                if not check:
+                    self.add_symbol_type(idd, type)
+                    print("HOHOH")
+                else:
+                    print(f"Error: {idd} already declared in the same scope")
+
+            elif(child[1]=="IDENTIFIER"):
+
+                check=self.check_symbol_type(edge_list[child[0]][0][1])
+                idd = edge_list[child[0]][0][1]
+                if not check:
+                    print(f"Error: {idd} not declared in the scope")
+            # elif(child[1]=="ListTupleIdentifier"):
+            #     identifier=edge_list[child[0]][0]
+            #     identifier_id=identifier[1]
+            #     # idd=edge_list[identifier_id][0][0]
+            #     check=self.check_scope(identifier_id)
+            #     # print(identifier_id)
+            #     if not check:
+            #         self.add_symbol_type(identifier_id, type)
+            #     else:
+            #         print(f"Error: {identifier_id} already declared in the same scope")
+            else:
+                self.dfs_traverse(edge_list, child[0], visited)
+
+
 if __name__ == '__main__':
     
     if len(sys.argv) != 2:
@@ -919,6 +1054,10 @@ if __name__ == '__main__':
         scopecheck1=scopecheck(edge_list)
         startId=list(edge_list.keys())[0]
         scopecheck1.dfs_traverse(edge_list,startId)
+        
+        typeCheck1 = TypeCheck(edge_list)
+        typeCheck1.dfs_traverse(edge_list, startId)
+
         
         
     except FileNotFoundError:
