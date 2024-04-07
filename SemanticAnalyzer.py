@@ -46,7 +46,7 @@ cond : UNARY_NOT c | c
 
 c : "(" c ")" | (exp | LEN "(" IDENTIFIER ")" | HEADOF "(" IDENTIFIER ")" | TAILOF "(" IDENTIFIER ")" | VAL2 | VAL1) comp (exp | LEN "(" IDENTIFIER ")" | HEADOF "(" IDENTIFIER ")" | TAILOF "(" IDENTIFIER ")" | VAL2 | VAL1) | TRUE | FALSE | c "||" c | c "&&" c | exp 
 comp : GTE | LTE | NEQL | LT | GT | EQL  
-exp : ( IDENTIFIER | IDENTIFIER "[" (VAL2 | IDENTIFIER) "]" | "(" exp ")" | (exp | int_exp) op (exp| int_exp))? | exp1
+exp : ( IDENTIFIER | IDENTIFIER "[" (IDENTIFIER) "]" | "(" exp ")" | (exp | int_exp) op (exp| int_exp))? | exp1
 exp1: "(" exp1 ")" | CONST 
 e1: ((dt_identifier  | datatype "(" ")" IDENTIFIER  | datatype "[" "]" IDENTIFIER  | datatype "{" "}" IDENTIFIER ) e2*)*
 e2: ("," e1)
@@ -57,6 +57,7 @@ binary_exp: binary_exp (OR | AND | EQL | NEQL) binary_exp
           | TRUE
           |FALSE
           | exp
+          
 
 
 if_cond : "if" "(" cond ")" "{" stmts "}" 
@@ -82,14 +83,17 @@ l:"cook" dt_identifier "=" "{" val11 "}"
     | IDENTIFIER "=" ( binary_exp)
     | IDENTIFIER "=" IDENTIFIER "[" int_exp "]"
     | IDENTIFIER "=" IDENTIFIER "(" val7 ")"
-    | "cook" dt_identifier "=" ( binary_exp | VAL1 | VAL9 )
     | "cook" dt_identifier "=" "[" val7 "]"
     | "cook" dt_identifier "=" IDENTIFIER "[" int_exp "]"
     | "cook" dt_identifier "=" IDENTIFIER "(" val7 ")"
     | "cook" dt_identifier "=" IDENTIFIER "("  ")"
-    | "cook" dt_identifier "=" slicing
+    | IDENTIFIER "[" VAL2 | IDENTIFIER "]" "=" ( binary_exp | VAL1 | VAL9 )
+    | slicing
     | to_print
     | throw 
+    | l2
+
+l2: "cook" dt_identifier "=" ( binary_exp | VAL1 | VAL9 )
 
 LIST_TUPLE_ID: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 FUNC_IDENTIFIER: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
@@ -98,7 +102,7 @@ FUNC_DECL_IDENTIFIER : /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 dt_identifier : datatype IDENTIFIER
 
 slicing: IDENTIFIER "[" exp? ":" exp? "]"
-       | VAL1 "[" exp? ":" exp? "]"
+       | VAL1 "[" VAL2 ":" VAL2 "]"
 
 CONST : VAL2 | VAL1 | VAL9
 
@@ -360,7 +364,7 @@ class IDENTIFIER(ASTNode):
         str=""
         for i in value:
             str+=i
-        self.value = str                        
+        self.value = str
                         
 class FUNC_IDENTIFIER(ASTNode):
     def __init__(self, value):
@@ -567,6 +571,7 @@ class ToAst(Transformer):
         for i in items:
             lst+=to_list(i)
         items=lst
+        # print(items)
         return Expression(items)
     
     def ex1(self, items):
@@ -602,6 +607,7 @@ class ToAst(Transformer):
         for i in items:
             lst+=to_list(i)
         items=lst
+        # print(items)
         return Expression(items)
     
     def int_exp(self, items):
@@ -609,6 +615,7 @@ class ToAst(Transformer):
         for i in items:
             lst+=to_list(i)
         items=lst
+        # print(items)
         return Expression(items)
     
     def iter(self, items):
@@ -654,11 +661,21 @@ class ToAst(Transformer):
         # print(items)
         return Assign(items)
     
+    def l2(self, items):
+        lst=[]
+        for i in items:
+            lst+=to_list(i)
+        items=lst
+        # print(items)
+        return Assign(items)
+
+    
     def dt_identifier(self, items):
         lst=[]
         for i in items:
             lst+=to_list(i)
         items=lst
+        # print("dt___ID", items)
         return DT_IDENTIFIER(items)
     
     def slicing(self, items):
@@ -681,6 +698,7 @@ class ToAst(Transformer):
         return self.create_node(items, IntTerminal)
     
     def VAL2(self,items):
+        # print(items)
         return self.create_node(items, IntTerminal)
     
     def VAL3(self,items):
@@ -736,6 +754,7 @@ class ToAst(Transformer):
         return IfElseBlock(items)
     
     def IDENTIFIER(self,items):
+        # print("ID", items)
         return self.create_node(items, IDENTIFIER)
     
     def trycatchblock(self,items):
@@ -841,7 +860,7 @@ class scopecheck:
     def check_scope(self, symbol):
         return symbol in self.scope
     
-    def dfs_traverse(self,edge_list,node, visited=None,node_type=None):
+    def dfs_traverse(self,edge_list,node, visited=None,node_type=None, curr_func=None):
         if visited is None:
             visited = set()
         if node in visited:
@@ -873,7 +892,7 @@ class scopecheck:
 
             if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
                 self.enter_scope()
-                self.dfs_traverse(edge_list,child[0], visited,child[1])
+                self.dfs_traverse(edge_list,child[0], visited,child[1], curr_func)
                 self.exit_scope()
                                                         
             elif(child[1]=="DT_IDENTIFIER"):
@@ -944,10 +963,66 @@ class TypeCheck:
         elif (exp=="true" or exp=="false"):
             return "flag"
         elif exp in self.func_list.keys():
-            return self.func_list[exp]
+            return self.func_list[exp][0]
         else:
             return "other"
         
+    def check_exp_type2(self,exp,edge_list,isArray=False):
+        if(isArray==True):
+            
+            if(exp[0][1]=="IntTerminal"):
+                list_id=exp[0][0]
+                int_list=edge_list[list_id]
+                first_ele_dt=int_list[0][1]
+                datatype_array=self.check_type(first_ele_dt)      
+            else:
+                
+                first_ele_dt=exp[0][1]
+                datatype_array=self.check_type(first_ele_dt)
+            
+            for tup in exp[0:]:
+                if(tup[1]!="IntTerminal"):
+                    if(self.check_type(tup[1])!=datatype_array):
+                        raise Exception("Invalid Array Declaration")
+                else:
+                    list_id=tup[0]
+                    int_list=edge_list[list_id]
+                    first_ele_dt=int_list[0][1]
+                    
+                    if(self.check_type(first_ele_dt)!=datatype_array):
+                        raise Exception("Invalid Array Declaration")
+                    
+            
+            return datatype_array
+        
+        if(len(exp)==1):
+            if (self.check_symbol_type(exp[0][1]) is not None):
+                return self.check_symbol_type(exp[0][1])
+            else:
+                return self.check_type(exp[0][1])
+        
+        if(len(exp)==2):
+            if (self.check_exp_type2(edge_list[exp[1][0]], edge_list)=="flag" and exp[0][1]=="UnaryNot"):
+                return "flag"
+            else:
+                raise Exception("Invalid Unary Operation")
+        
+        if(len(exp)==3):
+                    
+            if(self.check_exp_type2(edge_list[exp[0][0]], edge_list) == self.check_exp_type2(edge_list[exp[2][0]], edge_list)):
+                
+                
+                if (self.check_exp_type2(edge_list[exp[0][0]], edge_list)=="str" and exp[1][1]!="+"):
+                    raise Exception("Invalid String Concatenation")
+
+                else:
+                    return self.check_exp_type2(edge_list[exp[0][0]], edge_list)
+            elif(self.check_exp_type2(edge_list[exp[1][0]], edge_list) == self.check_exp_type2(edge_list[exp[2][0]], edge_list) and self.check_exp_type2(edge_list[exp[1][0]], edge_list)=="num" and self.check_exp_type2(edge_list[exp[0][0]], edge_list)=="str"):
+                return "str"
+             
+            else:
+                
+                raise Exception("Unequal DataTypes")
         
     def check_exp_type(self,exp,edge_list):
         if(len(exp)==1):
@@ -956,7 +1031,7 @@ class TypeCheck:
             else:
                 return self.check_type(exp[0][1])
         
-        if(len(exp)==2):
+        if(len(exp)==2 and exp[0][1]=="UnaryNot"):
             if (self.check_exp_type(edge_list[exp[1][0]], edge_list)=="flag" and exp[0][1]=="UnaryNot"):
                 return "flag"
             else:
@@ -973,7 +1048,7 @@ class TypeCheck:
                 raise Exception("Unequal DataTypes")
         
     
-    def dfs_traverse(self,edge_list,node, visited=None,node_type=None):
+    def dfs_traverse(self,edge_list,node, visited=None,node_type=None, curr_func=None):
         if visited is None:
             visited = set()
         if node in visited:
@@ -988,12 +1063,15 @@ class TypeCheck:
             idd=edge_list[identifier]
             rttype=edge_list[dt_id[0]][0][0]
             rt=edge_list[rttype]
-            self.func_list[idd[0][1]]=rt[0][1]
+            self.func_list[idd[0][1]]=[]
+            self.func_list[idd[0][1]].append(rt[0][1])
+            curr_func = idd[0][1]
         if(node_type=='Param'):
             child=edge_list[node]
             idd = edge_list[child[1][0]][0]
             dt= edge_list[child[0][0]][0]
             self.add_symbol_type(idd[1],dt[1])
+            self.func_list[curr_func].append(dt[1])
             return
         if(node_type=='Params'):
             child1=edge_list[node]
@@ -1001,12 +1079,13 @@ class TypeCheck:
                 child=edge_list[child[0]]
                 idd = edge_list[child[1][0]][0]
                 dt= edge_list[child[0][0]][0]
+                self.func_list[curr_func].append(dt[1])
                 self.add_symbol_type(idd[1],dt[1])
         for child in children:
 
                     if(node_type=='Params') and child[1]!='Param':
                         continue
-                    # print(child[1])
+                    print(child[1])
                     if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
                         self.enter_scope()
                         self.dfs_traverse(edge_list,child[0], visited, child[1])
@@ -1022,9 +1101,53 @@ class TypeCheck:
                         exp_id=exp[0]
                         length_exp= len(edge_list[exp_id])
                         exp_val=edge_list[exp_id][0][1]
-                        if (child2 == "ListItems" and child_name=="DT_IDENTIFIER"):
+                        
+                        c1=edge_list[child[0]][0]
+                        c2 =edge_list[child[0]][1]
+                        
+                        if(child2=="Slice"):
+                            dt = edge_list[child[0]][0]
+                            dt_id=dt[0]
+                            type2=edge_list[dt_id][0][0]
+                            type=edge_list[type2][0][1]
+                            # print(type)
                             
-                            type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
+                            if(type=="num" or type=="flag" or type=="char"):
+                                raise Exception("Slicing not allowed on num or flag or char type")
+                            
+                            id1 = edge_list[child[0]][0]
+                            id1_id = id1[0]
+                            var_id2 =edge_list[id1_id][1][0]
+                            var_id=edge_list[var_id2][0][1]
+                            
+                            
+                            slice_list=edge_list[edge_list[child[0]][1][0]]
+                            start=edge_list[slice_list[1][0]][0][1]
+                            end=edge_list[slice_list[2][0]][0][1]
+                            var=edge_list[slice_list[0][0]][0][1]
+                            
+                            type_slicing_var=self.check_symbol_type(var)
+                            # print(type)
+                            # print(type_slicing_var)
+                           
+                            if(type_slicing_var!=type):
+                                raise Exception("Slicing variable type is different from the type of the list")
+                            
+                            
+                            type_start=self.check_exp_type2([edge_list[slice_list[1][0]][0]],edge_list)
+                            
+                            type_end=self.check_exp_type2([edge_list[slice_list[2][0]][0]],edge_list)
+                            
+                            
+                            if(type_start!="num" or type_end!="num"):
+                                raise Exception("Slicing indexes should be of type num")
+                        
+                        elif (child2 == "ListItems" and child_name=="DT_IDENTIFIER"):
+                            
+                            if(isinstance(edge_list[exp_id],list)==False):
+                                continue
+                            type_exp=self.check_exp_type2(edge_list[exp_id],edge_list,isArray=True)
+                            # type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
                             identifier=edge_list[child[0]][1]
                             identifier_id=identifier[0]
                             idd=edge_list[identifier_id][0][1]
@@ -1039,7 +1162,6 @@ class TypeCheck:
                             var_id2 =edge_list[id1_id][1][0]
                             var_id=edge_list[var_id2][0][1]
                             
-                            
                             check=self.check_scope(var_id)
                             if not check:
                                 self.add_symbol_type(var_id, type)
@@ -1049,7 +1171,26 @@ class TypeCheck:
                             for c in edge_list[edge_list[child[0]][1][0]]:
                                 if (self.check_type(c[0][1])!=type):
                                     raise Exception(f"Error: Type of {var_id}: {type} is different from type of {c[0][1]}: {self.check_type(c[0][1])}")                        
-                                                                        
+                        
+                        elif (edge_list[c2[0]][0][1] in self.func_list.keys()):
+                            c3 = edge_list[child[0]][2]
+                            if (c3[1]=="IDENTIFIER"):
+                                func_called = edge_list[c2[0]][0][1]
+                                if (len(self.func_list[func_called])-1!=1):
+                                    raise Exception(f"Number of paramaters passed: {len(edge_list[c3[0]])} is uneqal to number of parameters required in function definition: {len(self.func_list[func_called])-1} of Function: {func_called}")
+                                
+                                p1 = edge_list[c3[0]][0][1]
+                                if (self.check_symbol_type(p1)!=self.func_list[func_called][1]):
+                                    raise Exception(f"Type of parameter {p1}: {self.check_symbol_type(p1)} is different from that defined at function declaration of {curr_func}: {self.func_list[func_called][1]}")
+                            else:
+                                func_called = edge_list[c2[0]][0][1]
+                            
+                                if (len(edge_list[c3[0]])!=len(self.func_list[func_called])-1):
+                                    raise Exception(f"Number of paramaters passed: {len(edge_list[c3[0]])} is uneqal to number of parameters required in function definition: {len(self.func_list[func_called])-1} of Function: {func_called}")
+                                for child in edge_list[c3[0]]:
+                                    p1 = edge_list[child[0]][0][1]
+                                    if (self.check_symbol_type(p1)!=self.func_list[func_called][1]):
+                                        raise Exception(f"Type of parameter {p1}: {self.check_symbol_type(p1)} is different from that defined at function declaration of {curr_func}: {self.func_list[func_called][1]}")
 
                         elif (child_name=="IDENTIFIER"):
                             
@@ -1065,8 +1206,6 @@ class TypeCheck:
                             if not check:
                                 raise Exception(f"Error: {idd} not declared in the scope")
 
-                            
-                            
                             if (type_idd != type_exp):
                                 raise Exception(f"Error: Type of {idd}: {type_idd} is different from type of {exp_val}: {type_exp}")
                            
@@ -1096,11 +1235,19 @@ class TypeCheck:
                                 self.add_symbol_type(var_id, type)
                             else:
                                 raise Exception(f"Error: {var_id} already declared in the same scope")
+                            
+                            if (exp_val=="IDENTIFIER" and len(edge_list[edge_list[child[0]][1][0]])==2):
+                                exp_val = edge_list[edge_list[edge_list[child[0]][1][0]][0][0]]
+                                                                
+                                exp_val2 = edge_list[edge_list[edge_list[child[0]][1][0]][1][0]][0][1]
+                                if (self.check_symbol_type(exp_val2)!="num"):
+                                    raise Exception(f"{exp_val2} should be of type num")
                                 
+                                type_exp= self.check_symbol_type(exp_val[0][1])
                             
                             if (type_exp != type):
-                                raise Exception(f"Error: Type of {var_id}: {type} is different from type of {exp_val}: {type_exp}")                        
-                                    
+                                raise Exception(f"Error: Type of {var_id}: {type} is different from type of {exp_val[0][1]}: {type_exp}")                        
+                            
                     elif(child[1]=="DT_IDENTIFIER"):
                         identifier=edge_list[child[0]][1]
                         identifier_id=identifier[0]
@@ -1124,7 +1271,7 @@ class TypeCheck:
                             raise Exception(f"Error: {idd} not declared in the scope")
                         
                     else:
-                        self.dfs_traverse(edge_list, child[0], visited, child[1])
+                        self.dfs_traverse(edge_list, child[0], visited, child[1], curr_func)
 
 if __name__ == '__main__':
     
