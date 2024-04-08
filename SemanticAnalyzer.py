@@ -1085,7 +1085,7 @@ class TypeCheck:
 
                     if(node_type=='Params') and child[1]!='Param':
                         continue
-                    print(child[1])
+                    # print(child[1])
                     if (child[1]=="FunctionDeclaration" or child[1]=="MainFunction" or child[1]=="Floop" or child[1]=="Wloop" or child[1]=="IfCond"or child[1]=="ElseIfCond"or child[1]=="ElseCond"):
                         self.enter_scope()
                         self.dfs_traverse(edge_list,child[0], visited, child[1])
@@ -1187,11 +1187,24 @@ class TypeCheck:
                             
                                 if (len(edge_list[c3[0]])!=len(self.func_list[func_called])-1):
                                     raise Exception(f"Number of paramaters passed: {len(edge_list[c3[0]])} is uneqal to number of parameters required in function definition: {len(self.func_list[func_called])-1} of Function: {func_called}")
+                                ind = 1
                                 for child in edge_list[c3[0]]:
-                                    p1 = edge_list[child[0]][0][1]
-                                    if (self.check_symbol_type(p1)!=self.func_list[func_called][1]):
-                                        raise Exception(f"Type of parameter {p1}: {self.check_symbol_type(p1)} is different from that defined at function declaration of {curr_func}: {self.func_list[func_called][1]}")
-
+                                    # print(child)
+                                    
+                                    if (child[1]=="IDENTIFIER"):
+                                        p1 = edge_list[child[0]][0][1]
+                                        # print(p1)
+                                        
+                                        if (self.check_symbol_type(p1)!=self.func_list[func_called][ind]):
+                                            raise Exception(f"Type of parameter {p1}: {self.check_symbol_type(p1)} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
+                                    # elif (child[1]=="StringTerminal"):
+                                    #     if (self.check_type(p1)!=self.func_list[func_called][ind]):
+                                    #         raise Exception(f"Type of parameter {p1}: {self.check_type(p1)} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
+                                    else:
+                                        if (self.check_type(child[1])!=self.func_list[func_called][ind]):
+                                            raise Exception(f"Type of parameter {child[1]}: {self.check_type(child[1])} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
+                                    ind=ind+1
+                                    
                         elif (child_name=="IDENTIFIER"):
                             
                             type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
