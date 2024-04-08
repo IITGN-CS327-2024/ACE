@@ -1197,9 +1197,9 @@ class TypeCheck:
                                         
                                         if (self.check_symbol_type(p1)!=self.func_list[func_called][ind]):
                                             raise Exception(f"Type of parameter {p1}: {self.check_symbol_type(p1)} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
-                                    # elif (child[1]=="StringTerminal"):
-                                    #     if (self.check_type(p1)!=self.func_list[func_called][ind]):
-                                    #         raise Exception(f"Type of parameter {p1}: {self.check_type(p1)} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
+                                    elif (child[1]=="StringTerminal"):
+                                        if ("str"!=self.func_list[func_called][ind]):
+                                            raise Exception(f"Type of parameter {p1}: {self.check_type(p1)} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
                                     else:
                                         if (self.check_type(child[1])!=self.func_list[func_called][ind]):
                                             raise Exception(f"Type of parameter {child[1]}: {self.check_type(child[1])} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
