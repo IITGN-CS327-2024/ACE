@@ -685,8 +685,8 @@ class ToAst(Transformer):
         items=lst
         return Slice(items)
     
-    def VAL1(self,items):
-        return self.create_node(items, StringTerminal)
+    # def VAL1(self,items):
+    #     return self.create_node(items, StringTerminal)
     
     def NUM1(self,items):
         return self.create_node(items, IntTerminal)
@@ -803,7 +803,7 @@ def create_ast(tree, edge_list,graph=None,parent=None):
             for _, child in children:
                 create_ast(child,edge_list,graph,tree)
         else:
-            if (type(tree)== Params or type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
+            if (type(tree)==ListItems or type(tree)== Params or type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 if str(id(parent)) in edge_list.keys():
@@ -1223,9 +1223,10 @@ class TypeCheck:
                                 raise Exception(f"Error: Type of {idd}: {type_idd} is different from type of {exp_val}: {type_exp}")
                            
                         elif (child_name=="DT_IDENTIFIER"):
+                            
                             type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
-
                             identifier=edge_list[child[0]][1]
+                            
                             identifier_id=identifier[0]
                             idd=edge_list[identifier_id][0][1]
 
@@ -1247,19 +1248,17 @@ class TypeCheck:
                             if not check:
                                 self.add_symbol_type(var_id, type)
                             else:
-                                raise Exception(f"Error: {var_id} already declared in the same scope")
-                            
-                            if (exp_val=="IDENTIFIER" and len(edge_list[edge_list[child[0]][1][0]])==2):
-                                exp_val = edge_list[edge_list[edge_list[child[0]][1][0]][0][0]]
-                                                                
+                                raise Exception(f"Error: {var_id} already declared in the same scope")                           
+                            if (exp_val=="IDENTIFIER" and len(edge_list[edge_list[child[0]][1][0]])==2):                                
+                                exp_val = edge_list[edge_list[edge_list[child[0]][1][0]][0][0]]                                                                                                
                                 exp_val2 = edge_list[edge_list[edge_list[child[0]][1][0]][1][0]][0][1]
                                 if (self.check_symbol_type(exp_val2)!="num"):
-                                    raise Exception(f"{exp_val2} should be of type num")
-                                
+                                    raise Exception(f"{exp_val2} should be of type num")                                                                
                                 type_exp= self.check_symbol_type(exp_val[0][1])
-                            
+                                                            
                             if (type_exp != type):
-                                raise Exception(f"Error: Type of {var_id}: {type} is different from type of {exp_val[0][1]}: {type_exp}")                        
+
+                                raise Exception(f"Error: Type of {var_id}: {type} is different from type of {exp_val}: {type_exp}")                        
                             
                     elif(child[1]=="DT_IDENTIFIER"):
                         identifier=edge_list[child[0]][1]

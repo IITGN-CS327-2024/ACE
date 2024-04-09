@@ -22,7 +22,7 @@ func str strval(num {} array,num k){
 
 func num main(){
     cook char a1='a';
-    cook num arr={1,2,3};
+    cook num arr={1,2,1};
     cook str stt="ad";
     cook tup=( 1 , "A" , 3 , "C" , stt[3:5]);
     cook lst=[ 1 , 2 , 3];

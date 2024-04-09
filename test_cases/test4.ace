@@ -1,6 +1,6 @@
 func num main(){
 
-cook num print_these = {1, 3, 5, 7, 9} ;
+cook num print_these = {1, 3, 5, -7, 9} ;
 
 cook flag isIt = false;
 cook flag err1 = !true;
