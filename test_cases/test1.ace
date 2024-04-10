@@ -11,15 +11,17 @@ func char fux(char t1, char t2, char t3){
 func num main(){
 cook char c1;
 c1='y';
-cook char c2='r';
+cook char c='r';
 cook str s1;
 s1="abc";
 cook str s2="def";
 cook num a6 = -5;
 
-cook num arr2={ 1 , 2 , -3 , 4 , 5};
+cook num u = 2;
+
+cook num arr2={ 2 , -3 , 4 , 5};
 cook num num2=5;
-cook char st = fux(c1, c2, 't');
+cook char st = fux(c1, c, 't');
 cook num num1 = -7;
 cook num xor = num2^num1;
 echo("Hello");

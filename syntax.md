@@ -103,51 +103,6 @@ cook num second_element=arr1[2];
 arr1[2]=7;
 ```
 
-
-### Syntax for Tuples
-* Tuples are used to store elements, also the elements can have different datatypes
-* The tuple remains immutable
-* The tuple will contain basic datatyples like integers and strings and won't support nested components like lists, tuples, etc .  
-* Declaration + Initialization :```cook < tuple name > = (values comma separated);```  
-
-```shell
-cook tup=( 1 , "A" , 3 , "C" , 5 );
-```  
-* To calculate length: ```len(< tuple name >)```
-* For head: ```headof(< tuple name >)```  
-* For tail: ```tailof(< tuple name >)```   
-* For accessing  element at ith index : ```< tuple name >[i]```
-* 
-```shell
-cook num length=len(tup);
-cook num head=headof(tup);
-cook num tail=tailof(tup);
-cook num second_element=tup[2];
-```
-
-### Syntax for List 
-* List are used to store elements, also the elements can have different datatypes
-* Declaration of List:  ```cook < list name > = [];```
-* Declaration + Initialization :```cook < list name > = [values comma separated ];```  
-
-```shell
-cook list1=[];
-cook list2=[ 1 , "abcd" , 3 , 4 , 5];
-```  
-* To calculate length: ```len(< list name >)```
-* For head: ```headof(< list name >)```  
-* For tail: ```tailof(< list name >)```  
-* For accessing  element at ith index : ```< list name >[i]```
-* For modifying element at ith index : ```< list name >[i]=< some value >;```  
-
-```shell
-cook num length=len(list1);
-cook num head=headof(list1);
-cook num tail=tailof(list1);
-cook num second_element=list1[2];
-list1[2]=7;
-```
-
 ## Syntax to Print 
 * Print to the terminal: ```echo( expression to be printed ) ;```
 ```shell

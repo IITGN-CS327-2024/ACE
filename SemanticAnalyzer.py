@@ -111,7 +111,7 @@ VAL2 : ("-")?VAL2T |"0"
 VAL3 : TRUE | FALSE
 
 val4 : ((VAL2 ) ( "," (VAL2) )*)?
-val11: ((VAL1 | VAL3 | VAL2 | VAL9) ( "," (VAL1 | VAL3 | VAL2 | VAL9) )*)?
+val11: ((VAL1 | VAL3 | VAL2 | VAL9 | IDENTIFIER) ( "," (VAL1 | VAL3 | VAL2 | VAL9 | IDENTIFIER) )*)?
 val5 : (VAL1 ( "," VAL1 )*)?
 
 val6 : (VAL3 ( "," VAL3 )*)?
@@ -343,7 +343,23 @@ class CharTerminal(ASTNode):
 class ListItems(ASTNode):
     def __init__(self, values):
         for i, value in enumerate(values):
-            setattr(self, f'{i}', value)
+            # print(value)
+            # pattern = r'^[+-]?\d+$'
+            # f = bool(re.match(pattern, value))
+
+            if(type(value)==str):
+                pattern = r'^[+-]?\d+$'
+                f = bool(re.match(pattern, value))
+                if(f):
+                    # print(value)
+                    new_val=IntTerminal(value)
+                    setattr(self, f'{i}', new_val)
+            
+                elif( len(value)==1):   
+                    new_val=IDENTIFIER(value)
+                    setattr(self, f'{i}', new_val)
+            else:
+                setattr(self, f'{i}', value)
             # print(type(value))
             
 class DT_IDENTIFIER(ASTNode):
@@ -969,30 +985,30 @@ class TypeCheck:
         else:
             return "other"
         
-    def check_exp_type2(self,exp,edge_list,isArray=False):
+    def check_exp_type2(self,exp,edge_list,isArray=False, var_id=None):
         if(isArray==True):
             
-            if(exp[0][1]=="IntTerminal"):
-                list_id=exp[0][0]
-                int_list=edge_list[list_id]
-                first_ele_dt=int_list[0][1]
-                datatype_array=self.check_type(first_ele_dt)      
-            else:
-                
-                first_ele_dt=exp[0][1]
-                datatype_array=self.check_type(first_ele_dt)
+            datatype_array=var_id
             
             for tup in exp[0:]:
-                if(tup[1]!="IntTerminal"):
+                if(tup[1]=="IDENTIFIER"):
+                     if(self.check_symbol_type(edge_list[tup[0]][0][1])!=datatype_array):
+                        raise Exception(f"Invalid Array Declaration. Array datatype: {datatype_array} does not match with element's datatype: {self.check_symbol_type(edge_list[tup[0]][0][1])}")
+        
+                elif(tup[1]!="IntTerminal"):
                     if(self.check_type(tup[1])!=datatype_array):
-                        raise Exception("Invalid Array Declaration")
+                        raise Exception(f"Invalid Array Declaration. Array datatype: {datatype_array} does not match with element's datatype: {self.check_type(tup[1])}")
+                        
                 else:
+                    
                     list_id=tup[0]
                     int_list=edge_list[list_id]
                     first_ele_dt=int_list[0][1]
                     
                     if(self.check_type(first_ele_dt)!=datatype_array):
-                        raise Exception("Invalid Array Declaration")
+                        raise Exception(f"Invalid Array Declaration. Array datatype: {datatype_array} does not match with element's datatype: {self.check_type(first_ele_dt)}")
+                        
+                        # raise Exception("Invalid Array Declaration")
                     
             
             return datatype_array
@@ -1084,7 +1100,7 @@ class TypeCheck:
                 self.func_list[curr_func].append(dt[1])
                 self.add_symbol_type(idd[1],dt[1])
         for child in children:
-
+            
                     if(node_type=='Params') and child[1]!='Param':
                         continue
                     # print(child[1])
@@ -1092,6 +1108,13 @@ class TypeCheck:
                         self.enter_scope()
                         self.dfs_traverse(edge_list,child[0], visited, child[1])
                         self.exit_scope()
+                        
+                    elif (child[1]=="Statement" and len(edge_list[child[0]])==2 and (edge_list[child[0]][1][1]=="++" or edge_list[child[0]][1][1]=="--") ):    
+                        # and (edge_list[child[0]][1][1]=="++" or edge_list[child[0]][1][1]=="--")
+                        # print()
+                        if (self.check_symbol_type(edge_list[child[0]][0][1])!="num"):
+                            raise Exception(f"Only datatype num can be incremented/decremented.")
+
                         
                     elif (child[1]=="Assign"):
                         identifier=edge_list[child[0]][0]
@@ -1145,10 +1168,9 @@ class TypeCheck:
                                 raise Exception("Slicing indexes should be of type num")
                         
                         elif (child2 == "ListItems" and child_name=="DT_IDENTIFIER"):
-                            
-                            if(isinstance(edge_list[exp_id],list)==False):
-                                continue
-                            type_exp=self.check_exp_type2(edge_list[exp_id],edge_list,isArray=True)
+                            # print(1)
+                            # if(isinstance(edge_list[exp_id],list)==False):
+                            #     continue
                             # type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
                             identifier=edge_list[child[0]][1]
                             identifier_id=identifier[0]
@@ -1163,8 +1185,10 @@ class TypeCheck:
                             id1_id = id1[0]
                             var_id2 =edge_list[id1_id][1][0]
                             var_id=edge_list[var_id2][0][1]
-                            
                             check=self.check_scope(var_id)
+                            
+                            type_exp=self.check_exp_type2(edge_list[exp_id],edge_list,isArray=True, var_id=type)
+                            
                             if not check:
                                 self.add_symbol_type(var_id, type)
                             else:
@@ -1173,7 +1197,7 @@ class TypeCheck:
                             for c in edge_list[edge_list[child[0]][1][0]]:
                                 if (self.check_type(c[0][1])!=type):
                                     raise Exception(f"Error: Type of {var_id}: {type} is different from type of {c[0][1]}: {self.check_type(c[0][1])}")                        
-                        
+                            
                         elif (edge_list[c2[0]][0][1] in self.func_list.keys()):
                             c3 = edge_list[child[0]][2]
                             if (c3[1]=="IDENTIFIER"):
@@ -1206,7 +1230,14 @@ class TypeCheck:
                                         if (self.check_type(child[1])!=self.func_list[func_called][ind]):
                                             raise Exception(f"Type of parameter {child[1]}: {self.check_type(child[1])} is different from that defined at function declaration of {func_called}: {self.func_list[func_called][ind]}")
                                     ind=ind+1
-                                    
+                        
+                        # elif (child[1]=="Statement" ):
+                        #     print("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP")
+                        #     # if (edge_list[child[0]][1][1]=="++" or edge_list[child[0]][1][1]=="--"):
+                        #     #     if (self.check_symbol_type(edge_list[child[0]][0][1])!="num"):
+                        #     #         raise Exception(f"Only datatype num can be incremented/decremented.")
+            
+                        
                         elif (child_name=="IDENTIFIER"):
                             
                             type_exp=self.check_exp_type(edge_list[exp_id],edge_list)
