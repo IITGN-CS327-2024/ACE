@@ -74,16 +74,12 @@ l1:  "cook" dt_identifier "=" VAL2 ":" ":" IDENTIFIER
     | l
 
 l:"cook" dt_identifier "=" "{" val11 "}" 
-    | "cook" LIST_TUPLE_ID "=" "[" val7 "]"
-    | "cook" LIST_TUPLE_ID "=" "(" val7 ")"
     | "cook" dt_identifier
     | "cook" dt_identifier "[" IDENTIFIER "]"
     | "cook" dt_identifier "[" int_exp "]"
-    | IDENTIFIER "=" "[" val7 "]"
     | IDENTIFIER "=" ( binary_exp)
     | IDENTIFIER "=" IDENTIFIER "[" int_exp "]"
     | IDENTIFIER "=" IDENTIFIER "(" val7 ")"
-    | "cook" dt_identifier "=" "[" val7 "]"
     | "cook" dt_identifier "=" IDENTIFIER "[" int_exp "]"
     | "cook" dt_identifier "=" IDENTIFIER "(" val7 ")"
     | "cook" dt_identifier "=" IDENTIFIER "("  ")"
@@ -233,8 +229,14 @@ class DataType(ASTNode):
             
 class Assign(ASTNode):
     def __init__(self, values):
+
         for i, value in enumerate(values):
-            setattr(self, f'{i}', value)
+            # print(value,type(value))
+            if(type(value)==str):     
+                new_val=IDENTIFIER(value)
+                setattr(self, f'{i}', new_val)
+            else:
+                setattr(self, f'{i}', value)
 
 class   IfElseBlock(ASTNode):
     def __init__(self, values):
@@ -571,7 +573,6 @@ class ToAst(Transformer):
         for i in items:
             lst+=to_list(i)
         items=lst
-        # print(items)
         return Expression(items)
     
     def ex1(self, items):
@@ -813,6 +814,7 @@ def create_ast(tree, edge_list,graph=None,parent=None):
                     edge_list[str(id(parent))].append((str(id(tree)),str(tree)))
                 for _, child in children:
                     create_ast(child,edge_list,graph,tree)
+                    
             elif child_count==1:
                 for _, child in children:
                     if isinstance(child, ASTNode):
@@ -1299,6 +1301,7 @@ if __name__ == '__main__':
             test_program = sentence
         parser = Lark(grammar, start='program', parser='lalr')
         tree = parser.parse(sentence)
+        # print(tree.pretty())
         edge_list={}
         print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
         graph =create_ast(parse(test_program),edge_list)

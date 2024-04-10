@@ -12,7 +12,7 @@ func num testing(num a){
 }
 
 func num main(){
-cook num a1=5;  
+cook num a=5;  
 cook num c=testing(a1);
 
 floop(cook num a=1; a < 5; a++){

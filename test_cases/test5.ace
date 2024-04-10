@@ -1,6 +1,6 @@
 func num main(){
     
-cook num dont_print_these = [2, 4, 6, 8, 0] ;
+cook num dont_print_these = {2, 4, 6, 8, 0} ;
 
 cook flag f1 = false;
 cook flag f2 = true;
