@@ -1446,7 +1446,7 @@ class WATGenerator:
         if node[1]=='DT_IDENTIFIER':
             child2_id=self.edge_list[node[0]][1][0]
             var_name=self.edge_list[child2_id][0][1]
-            self.wat_code+=f"\t\tlocal {var_name} i32\n"
+            self.wat_code+=f"\t\tlocal ${var_name} i32\n"
         elif node[1]=='Expression':
             if len(self.edge_list[node[0]])==1:
                 num=self.edge_list[node[0]][0]
@@ -1491,7 +1491,7 @@ class WATGenerator:
             var_name=self.edge_list[var_name][0][1]
             for child in self.edge_list[node[0]]:
                 self.assign_codegen(child)
-            self.wat_code+=f"\t\tlocal.set {var_name}\n"
+            self.wat_code+=f"\t\tlocal.set ${var_name}\n"
         else:
             for child in self.edge_list[node[0]]:
                 self.assign_codegen(child)
@@ -1583,11 +1583,16 @@ if __name__ == '__main__':
         print("-------------Type Checking Started----------------")
         typeCheck1.dfs_traverse(edge_list, startId)
         print("-------------Type Checking Done----------------")
-        print("-------------Code Generation Started----------------")
-        codeGen = WATGenerator(edge_list, startId, startId)
-        codeGen.generate_wat()
-        print(codeGen.wat_code)
-        print("-------------Code Generation Done----------------")
+        # print("-------------Code Generation Started----------------")
+        # codeGen = WATGenerator(edge_list, startId, startId)
+        # codeGen.generate_wat()
+        # print(codeGen.wat_code)
+        
+        # # generate_wat() returns a string, write that to a file of type .wat:
+        # with open("output.wat", "w") as f:
+        #     f.write(codeGen.wat_code)
+        
+        # print("-------------Code Generation Done----------------")
 
         
         
