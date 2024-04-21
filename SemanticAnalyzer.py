@@ -168,6 +168,7 @@ IDENTIFIER: /(?<!(main)\b)[a-zA-Z_][a-zA-Z0-9_]*/
 
 
 
+
 class ASTNodeMeta(type):
     def __new__(cls, name, bases, dct):
         if name != 'ASTNode':
@@ -1318,26 +1319,242 @@ class TypeCheck:
                     else:
                         self.dfs_traverse(edge_list, child[0], visited, child[1], curr_func)
 
+class WATGenerator:
+    def __init__(self, edge_list, node, startId):
+        self.edge_list = edge_list
+        self.wat_code = ""
+        self.node = node
+        self.startId=startId
 
+    def generate_wat(self):
+        self.traverse(self.node)
+        return self.wat_code
 
-class CodeGeneration:
-    def __init__(self,tree):
-        self.tree=tree
-        self.scopes = []
-        self.func_list = {}
-        self.wat=[]
+    def traverse(self, node):
+        # node = edge_list[node]
+        # print(node)
+        if (self.startId==node):
+        # if node[0][1]=="Start":
+            self.traverse_program(node)
+        elif node[1]=="MainFunction":
+            self.traverse_main_function(node)
+        elif node[1]=="FunctionDeclList":
+            for function_decl in node.children:
+                self.traverse(function_decl)
+        elif node[1]=="FunctionDeclaration":
+            self.traverse_function_declaration(node)
+        elif node[1]=="Statement":
+            print("stms")
+            print(edge_list[node[0]])
+            for child in edge_list[node[0]]:
+                print(child)
+                self.traverse(child)
+            print(self.wat_code)
+        elif node[1]=="Assign":
+            print("HELLLO")
+            # self.traverse_assign(node)
+            self.assign_codegen(node)
+            
+        # Add more cases for other node types
 
-    def dfs_traverse(self,node,edge_list,visited=None,node_type=None, curr_func=None):
-        if node not in edge_list:
-            return
+    def traverse_program(self, node):
+        print(node)
         children = edge_list[node]
+        print(children)
         for child in children:
-            if(child[1]=='Expression'):
-                if(len(edge_list[child[0]])==1):
-                    return
-                else:
-                    self.dfs_traverse(child[0],edge_list,visited,child[1],curr_func)
-                    self.wat.append(edge_list[child[0]][0][1])
+            print(child)    
+            self.traverse(child)
+    
+    def traverse_main_function(self, node):
+        print("HII")
+        print(node)
+        # children = edge_list[node[0]]
+        # print(children)
+        # for child in children:
+        #     self.traverse(child)
+            
+        # Generate WAT code for function declaration
+        self.wat_code += f'module(\n\t(func $main \n'
+        # Process parameters
+        # for param in parameters:
+        #     self.wat_code += f'(param ${param}) '
+        # Process function body
+        # self.traverse(node.function_body)
+        # self.wat_code += 'call $Statement\n'
+        # End of function declaration
+        children = edge_list[node[0]]
+        self.traverse(children[0])
+        # print('ooooooooooooooooooooooooooooooooooooooooooo')
+        # print(self.wat_code)
+        self.wat_code += f'))\n'
+        # self.wat_code += f"tt"
+        # print(self.wat_code)
+        
+        # print('ooooooooooooooooooooooooooooooooooooooooooo')
+        
+        # children = edge_list[node[0]]
+        # print(children)
+        # self.traverse(children[0])
+        # for child in children:
+        #     print("ok")
+        #     print(child)
+        #     self.traverse(child)
+        # traverse()
+        
+
+
+    def traverse_function_declaration(self, node):
+        function_name = node.function_name
+        parameters = node.parameters
+        # Generate WAT code for function declaration
+        self.wat_code += f'(func ${function_name} '
+        # Process parameters
+        for param in parameters:
+            self.wat_code += f'(param ${param}) '
+        self.wat_code += ')\n'
+        # Process function body
+        self.traverse(node.function_body)
+        # End of function declaration
+        self.wat_code += ')\n'
+
+    def traverse_assign(self, node):
+        # variable = node.variable
+        # value = node.value
+        # Generate WAT code for assignment
+        print(self.wat_code)
+        DT_IDENTIFIER = edge_list[node[0]][0]
+        print(DT_IDENTIFIER)
+        dt = edge_list[edge_list[DT_IDENTIFIER[0]][0][0]][0][1]
+        print(dt)
+        id = edge_list[edge_list[DT_IDENTIFIER[0]][1][0]][0][1]
+        print(id)
+        
+        Exp = edge_list[node[0]][1]
+        dt = edge_list[edge_list[DT_IDENTIFIER[0]][0][0]][0][1]
+
+        # DT_IDENTIFIER = 
+        
+        self.wat_code += f'(local.set $ '
+        # self.traverse(value)
+        self.wat_code += ')\n'
+        
+    def assign_codegen(self,node):
+        print(111111111111111111111111111111111)
+        # print(self.wat_code)'
+        if node[0] not in self.edge_list:
+            return
+        if node[1]=='DT_IDENTIFIER':
+            child2_id=self.edge_list[node[0]][1][0]
+            var_name=self.edge_list[child2_id][0][1]
+            self.wat_code+=f"\t\tlocal {var_name} i32\n"
+        elif node[1]=='Expression':
+            if len(self.edge_list[node[0]])==1:
+                num=self.edge_list[node[0]][0]
+                self.wat_code+=f"\t\ti32.const {num[1]}\n"
+                return 
+            else:
+                self.assign_codegen(self.edge_list[node[0]][0])
+                self.assign_codegen(self.edge_list[node[0]][2])
+                op=self.edge_list[node[0]][1][1]
+                if op=="+":
+                    self.wat_code+="\t\ti32.add\n"
+                elif op=="-":
+                    self.wat_code+="\t\ti32.sub\n"
+                elif op=="*":
+                    self.wat_code+="\t\ti32.mul\n"
+                elif op=="/":
+                    self.wat_code+="\t\ti32.div_s\n"
+                elif op=="%":
+                    self.wat_code+="\t\ti32.rem_s\n"
+                elif op=="==":
+                    self.wat_code+="\t\ti32.eq\n"
+                elif op=="!=":
+                    self.wat_code+="\t\ti32.ne\n"
+                elif op==">":
+                    self.wat_code+="\t\ti32.gt_s\n"
+                elif op=="<":
+                    self.wat_code+="\t\ti32.lt_s\n"
+                elif op==">=":
+                    self.wat_code+="\t\ti32.ge_s\n"
+                elif op=="<=":
+                    self.wat_code+="\t\ti32.le_s\n"
+                elif op=="&&":
+                    self.wat_code+="\t\ti32.and\n"
+                elif op=="||":
+                    self.wat_code+="\t\ti32.or\n"
+                elif op=="!":
+                    self.wat_code+="\t\ti32.eqz\n"
+                
+        elif node[1]=='Assign':
+            child2_id=self.edge_list[node[0]][0][0]
+            var_name=self.edge_list[child2_id][1][0]
+            var_name=self.edge_list[var_name][0][1]
+            for child in self.edge_list[node[0]]:
+                self.assign_codegen(child)
+            self.wat_code+=f"\t\tlocal.set {var_name}\n"
+        else:
+            for child in self.edge_list[node[0]]:
+                self.assign_codegen(child)
+
+
+class codeGenerator:
+    def __init__(self, tree):
+        self.tree = tree
+        
+    def dfs_traverse(self, edge_list, node):
+        if node not in edge_list.keys():
+            return
+        
+        children = edge_list[node]
+        
+        for child in children:
+            child_type = child[1]
+            
+            add_op = 'module((func $add (param $lhs i32) (param $rhs i32) (result i32)local.get $lhslocal.get $rhsi32.add)(export "add" (func $add)))'
+
+            # if True:
+                
+            if child_type == 'FunctionDeclaration':
+                # Handle function declaration
+                # function_id = children[0]
+                # function_name = edge_list[edge_list[function_id][1][0]][0][1]
+                
+                DT_IDENTIFIER = edge_list[child[0]][0]
+                dt = edge_list[edge_list[DT_IDENTIFIER[0]][0][0]][0][1]
+                id = edge_list[edge_list[DT_IDENTIFIER[0]][1][0]][0][1]
+                
+                
+                
+                
+                # self.emit(f'(func ${function_name} (param $param1 i32) (result i32)')
+                self.enter_scope()  # Enter function scope
+
+                # Traverse function body
+                function_body = edge_list[node][2]
+                self.dfs_traverse(edge_list, function_body)
+
+                # self.exit_scope()  # Exit function scope
+                self.emit(')')  # End of function
+
+            elif child_type == 'Assignment':
+                # Handle assignment
+                variable_name = edge_list[edge_list[node][0]][0][1]
+                value_node = edge_list[node][2]
+                self.dfs_traverse(edge_list, value_node)
+                self.emit(f'(local.set ${variable_name})')
+
+            elif child_type == 'BinaryExpression':
+                # Handle binary expression
+                left_operand = edge_list[node][0]
+                right_operand = edge_list[node][2]
+                operator = edge_list[node][1][1]  # Assuming operator is part of the node
+                self.dfs_traverse(edge_list, left_operand)
+                self.dfs_traverse(edge_list, right_operand)
+                self.emit(f'(i32.{operator})')
+
+            # Add handling for other node types (conditions, loops, etc.)
+
+
 if __name__ == '__main__':
     
     if len(sys.argv) != 2:
@@ -1366,7 +1583,12 @@ if __name__ == '__main__':
         print("-------------Type Checking Started----------------")
         typeCheck1.dfs_traverse(edge_list, startId)
         print("-------------Type Checking Done----------------")
-        
+        print("-------------Code Generation Started----------------")
+        codeGen = WATGenerator(edge_list, startId, startId)
+        codeGen.generate_wat()
+        print(codeGen.wat_code)
+        print("-------------Code Generation Done----------------")
+
         
         
     except FileNotFoundError:
