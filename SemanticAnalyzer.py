@@ -1318,6 +1318,26 @@ class TypeCheck:
                     else:
                         self.dfs_traverse(edge_list, child[0], visited, child[1], curr_func)
 
+
+
+class CodeGeneration:
+    def __init__(self,tree):
+        self.tree=tree
+        self.scopes = []
+        self.func_list = {}
+        self.wat=[]
+
+    def dfs_traverse(self,node,edge_list,visited=None,node_type=None, curr_func=None):
+        if node not in edge_list:
+            return
+        children = edge_list[node]
+        for child in children:
+            if(child[1]=='Expression'):
+                if(len(edge_list[child[0]])==1):
+                    return
+                else:
+                    self.dfs_traverse(child[0],edge_list,visited,child[1],curr_func)
+                    self.wat.append(edge_list[child[0]][0][1])
 if __name__ == '__main__':
     
     if len(sys.argv) != 2:
@@ -1346,7 +1366,7 @@ if __name__ == '__main__':
         print("-------------Type Checking Started----------------")
         typeCheck1.dfs_traverse(edge_list, startId)
         print("-------------Type Checking Done----------------")
-
+        
         
         
     except FileNotFoundError:
