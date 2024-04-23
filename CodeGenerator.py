@@ -1,3 +1,5 @@
+import os
+
 import sys
 from typing import List, Optional
 from dataclasses import dataclass
@@ -203,6 +205,11 @@ class FunctionDeclList(ASTNode):
         for i, value in enumerate(values):
             setattr(self, f'{i}', value)
             
+class Return(ASTNode):
+    def __init__(self, values):
+        for i, value in enumerate(values):
+            setattr(self, f'{i}', value)
+
 
 class Statement(ASTNode):
     def __init__(self, values):
@@ -1404,19 +1411,26 @@ class WATGenerator:
                 self.codegen_statement(self.edge_list[node[0]][2])
                 self.wat_code+= f"\t)\n"
                 return
-            self.wat_code+= f"\t(func ${idd} "
+            idd2='"'+f"{idd}"+'"'
+            self.wat_code+= f"\t(func ${idd} (export {idd2}) "
             self.codegen_params(edge_list[node[0]][1])
             self.wat_code+= f"(result i32)\n"
             self.codegen_func(node)
             self.wat_code+= f"\t)\n"
             return
     def codegen_func(self,node):
-        pass
+        self.assign_codegen_local(edge_list[node[0]])
+        for child in self.edge_list[node[0]]:
+            if child[1]=='Statement':
+                self.codegen_statement(child)
+
     def codegen_main(self,node):
         self.assign_codegen_local(node)
         for child in self.edge_list[node[0]]:
             if child[1]=='Statement':
                 self.codegen_statement(child)
+           
+
 
     def codegen_statement(self,node):
         if node[0] not in self.edge_list:
@@ -1448,6 +1462,18 @@ class WATGenerator:
             # add local.get var name
             # self.wat_code+=f"\t\t(local.get ${var_name})\n"
             return
+        
+        '''
+        (func $arrindexing (param $index i32) (param $address i32) (result i32)
+                        (local.get $index)   ;; Load the index parameter onto the stack
+                        (i32.const 4)        ;; Load the constant value 4 onto the stack
+                        (i32.mul)            ;; Multiply index by 4
+        
+                        ;; Add the address
+                        (local.get $address) ;; Load the address parameter onto the stack
+                        (i32.add)   
+                    )
+        '''
 
         if node[1]=='Expression':
             self.codegen_expression(node)
@@ -1456,55 +1482,55 @@ class WATGenerator:
         
         if node[1]=='+':
             # call the add modeule
-            self.wat_code+=f"\t\t(call $add)\n"
+            self.wat_code+=f"\t\t(i32.add)\n"
             return
         if node[1]=='-':
             # call the sub modeule
-            self.wat_code+=f"\t\t(call $sub)\n"
+            self.wat_code+=f"\t\t(i32.sub)\n"
             return
         if node[1]=='*':
             # call the mul modeule
-            self.wat_code+=f"\t\t(call $mul)\n"
+            self.wat_code+=f"\t\t(i32.mul)\n"
             return
         if node[1]=='/':
             # call the div modeule
-            self.wat_code+=f"\t\t(call $div)\n"
+            self.wat_code+=f"\t\t(i32.div_s)\n"
             return
         if node[1]=='%':
             # call the mod modeule
-            self.wat_code+=f"\t\t(call $mod)\n"
+            self.wat_code+=f"\t\t(i32.rem_s)\n"
             return
         if node[1]=='==':
             # call the eq modeule
-            self.wat_code+=f"\t\t(call $eq)\n"
+            self.wat_code+=f"\t\t(i32.eq)\n"
             return
         if node[1]=='!=':
             # call the neq modeule
-            self.wat_code+=f"\t\t(call $neq)\n"
+            self.wat_code+=f"\t\t(i32.neq)\n"
             return
         if node[1]=='>':
             # call the gt modeule
-            self.wat_code+=f"\t\t(call $gt)\n"
+            self.wat_code+=f"\t\t(i32.gt)\n"
             return
         if node[1]=='<':
             # call the lt modeule
-            self.wat_code+=f"\t\t(call $lt)\n"
+            self.wat_code+=f"\t\t(i32.lt)\n"
             return
         if node[1]=='>=':
             # call the gte modeule
-            self.wat_code+=f"\t\t(call $gte)\n"
+            self.wat_code+=f"\t\t(i32.gte)\n"
             return
         if node[1]=='<=':
             # call the lte modeule
-            self.wat_code+=f"\t\t(call $lte)\n"
+            self.wat_code+=f"\t\t(i32.lte)\n"
             return
         if node[1]=='&&':
             # call the and modeule
-            self.wat_code+=f"\t\t(call $and)\n"
+            self.wat_code+=f"\t\t(i32.and)\n"
             return
         if node[1]=='||':
             # call the or modeule
-            self.wat_code+=f"\t\t(call $or)\n"
+            self.wat_code+=f"\t\t(i32.or)\n"
             return
         
         
@@ -1549,20 +1575,23 @@ if __name__ == '__main__':
         edge_list={}
         print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
         graph =create_ast(parse(test_program),edge_list)
-        graph.render('AST.gv', view=True)
+        #graph.render('AST.gv', view=True)
         scopecheck1=scopecheck(edge_list)
         startId=list(edge_list.keys())[0]
         print("-------------Scope Checking Started----------------")
         scopecheck1.dfs_traverse(edge_list,startId)
         print("-------------Scope Checking Done----------------")
-        typeCheck1 = TypeCheck(edge_list)
-        print("-------------Type Checking Started----------------")
-        typeCheck1.dfs_traverse(edge_list, startId)
-        print("-------------Type Checking Done----------------")
+        #typeCheck1 = TypeCheck(edge_list)
+        #print("-------------Type Checking Started----------------")
+        #typeCheck1.dfs_traverse(edge_list, startId)
+        #print("-------------Type Checking Done----------------")
         print("-------------Code Generation Started----------------")
         codeGen = WATGenerator(edge_list, startId, startId) 
         codeGen.traverse(edge_list[startId][0])
-        print(codeGen.wat_code)
+        wat_code=codeGen.wat_code
+        #export this string to output.wat file
+        with open('output.wat', 'w') as f:
+            f.write(wat_code)
         print("-------------Code Generation Done----------------")
 
         
