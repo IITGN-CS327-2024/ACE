@@ -1092,12 +1092,25 @@ class TypeCheck:
             self.func_list[idd[0][1]].append(rt[0][1])
             curr_func = idd[0][1]
         if(node_type=='Param'):
-            child=edge_list[node]
-            idd = edge_list[child[1][0]][0]
-            dt= edge_list[child[0][0]][0]
-            self.add_symbol_type(idd[1],dt[1])
-            self.func_list[curr_func].append(dt[1])
-            return
+            if len(edge_list[node])==2:
+                child=edge_list[node]
+                idd = edge_list[child[1][0]][0]
+                dt= edge_list[child[0][0]][0]
+                self.add_symbol_type(idd[1],dt[1])
+                print(dt[1])
+                self.func_list[curr_func].append(dt[1])
+                return
+            else:
+                child=edge_list[node]
+                idd = edge_list[child[1][0]][0]
+                dt= edge_list[child[0][0]][0]
+                self.add_symbol_type(idd[1],dt[1])
+                print(dt[1])
+                # self.func_list[curr_func].append(dt[1])
+                return
+
+
+
         if(node_type=='Params'):
             child1=edge_list[node]
             for child in child1:
@@ -1105,6 +1118,7 @@ class TypeCheck:
                 idd = edge_list[child[1][0]][0]
                 dt= edge_list[child[0][0]][0]
                 self.func_list[curr_func].append(dt[1])
+                print(dt[1])
                 self.add_symbol_type(idd[1],dt[1])
         for child in children:
             
