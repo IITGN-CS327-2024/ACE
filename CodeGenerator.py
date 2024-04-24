@@ -32,7 +32,7 @@ param: dt_identifier  | datatype  IDENTIFIER LP RP | datatype  IDENTIFIER  LSB R
 datatype: NUM | STR | VOID | CHAR | FLAG
 stmts: (stmt ";" | function_decl | floop  |  wloop  |  if_else_block  |  trycatchblock | iter ";" )*
 trycatchblock: try_ catch?
-stmt: CONTINUE | BREAK | RETURN | RETURN IDENTIFIER | RETURN CONST |(IDENTIFIER "[" IDENTIFIER "]" "=" exp ) | l1 | RETURN IDENTIFIER "[" (VAL2)? ":" (VAL2)? "]"
+stmt: CONTINUE | BREAK | returner |(IDENTIFIER "[" IDENTIFIER "]" "=" exp ) | l1 | RETURN IDENTIFIER "[" (VAL2)? ":" (VAL2)? "]"
 if_else_block: if_cond else_if_cond* else_cond?
 try_ : "try"  "{"  stmts  "}" 
 catch :  "catch"  "{"  stmts  "}" 
@@ -103,6 +103,9 @@ dt_identifier : datatype IDENTIFIER
 slicing: IDENTIFIER "[" exp? ":" exp? "]"
        | VAL1 "[" VAL2 ":" VAL2 "]"
 
+
+returner :"return" | "return" IDENTIFIER | "return" CONST
+RETURN : "return"
 CONST : VAL2 | VAL1 | VAL9
 
 VAL1: /"[^"]*"/
@@ -131,7 +134,8 @@ TRY : "try"
 CATCH : "catch"
 THROW : "throw"
 MAIN : "main"
-RETURN : "return"
+
+
 CONTINUE : "continue"
 BREAK : "break"
 INC : "++"
@@ -205,7 +209,7 @@ class FunctionDeclList(ASTNode):
         for i, value in enumerate(values):
             setattr(self, f'{i}', value)
             
-class Return(ASTNode):
+class returner(ASTNode):
     def __init__(self, values):
         for i, value in enumerate(values):
             setattr(self, f'{i}', value)
@@ -699,6 +703,12 @@ class ToAst(Transformer):
         items=lst
         # print(items)
         return Assign(items)
+    
+    def returner(self, items):
+        lst=[]
+        for i in items:
+            lst+=to_list(i)
+        return returner(items)
 
     
     def dt_identifier(self, items):
@@ -715,6 +725,7 @@ class ToAst(Transformer):
             lst+=to_list(i)
         items=lst
         return Slice(items)
+
     
     # def VAL1(self,items):
     #     return self.create_node(items, StringTerminal)
@@ -788,12 +799,15 @@ class ToAst(Transformer):
         # print("ID", items)
         return self.create_node(items, IDENTIFIER)
     
+ 
     def trycatchblock(self,items):
         lst=[]
         for i in items:
             lst+=to_list(i)
         items=lst
         return TryCatchBlock(items)
+    
+
     def LIST_TUPLE_ID(self,items):
         return self.create_node(items, ListTupleIdentifier)
     def FUNC_IDENTIFIER(self,items):
@@ -834,7 +848,7 @@ def create_ast(tree, edge_list,graph=None,parent=None):
             for _, child in children:
                 create_ast(child,edge_list,graph,tree)
         else:
-            if (type(tree)==ListItems or type(tree)== Params or type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier):
+            if (type(tree)==ListItems or type(tree)== Params or type(tree)==ElseCond or type(tree)==FunctionDeclaration or type(tree)==MainFunction or type(tree)==Try or type(tree)==Catch or type(tree)==Throw or type(tree)==ListTupleIdentifier or type(tree)==returner or type(tree)==Statement):
                 graph.node(str(id(tree)), label=str(tree), filled='true')
                 graph.edge(str(id(parent)), str(id(tree)))
                 if str(id(parent)) in edge_list.keys():
@@ -1112,7 +1126,6 @@ class TypeCheck:
                 idd = edge_list[child[1][0]][0]
                 dt= edge_list[child[0][0]][0]
                 self.add_symbol_type(idd[1],dt[1])
-                print(dt[1])
                 # self.func_list[curr_func].append(dt[1])
                 return
 
@@ -1371,6 +1384,12 @@ class WATGenerator:
         # print(self.wat_code)
         if node[0] not in self.edge_list:
             return
+        # if node[1]=="returner":
+        #     child_id = self.edge_list[node[0]][0]
+        #     var_name = self.edge_list[child_id[0]][0][1]       
+        #     self.wat_code+=f"\t\t(local ${var_name} i32)\n"
+        #     return
+
         if node[1]=='DT_IDENTIFIER':
             child2_id=self.edge_list[node[0]][1][0]
             var_name=self.edge_list[child2_id][0][1]
@@ -1378,8 +1397,8 @@ class WATGenerator:
             return 
 
         for child in self.edge_list[node[0]]:
-            if child[0]=='Floop' or child[0]=='Wloop' or child[0]=='IfCond' or child[0]=='ElseIfCond' or child[0]=='ElseCond':
-                continue
+            # if child[0]=='Floop' or child[0]=='Wloop' or child[0]=='IfCond' or child[0]=='ElseIfCond' or child[0]=='ElseCond':
+            #     continue
             self.assign_codegen_local(child)
 
     def generate_wat(self):
@@ -1391,6 +1410,7 @@ class WATGenerator:
             return
         if node[1]=='FunctionDeclList' or node[1]=='Start':
             self.wat_code+= f"(module\n"
+            self.wat_code+=f'(memory (export "memory") 1)\n'
             for child in self.edge_list[node[0]]:
                 self.traverse(child)
             self.wat_code+= f"\t)\n"
@@ -1409,17 +1429,22 @@ class WATGenerator:
                 self.wat_code+= f"\t(func $main (result i32)\n"
                 self.assign_codegen_local(self.edge_list[node[0]][2])
                 self.codegen_statement(self.edge_list[node[0]][2])
-                self.wat_code+= f"\t)\n"
+                self.wat_code+= f" (i32.const 1) \t)\n"
                 return
             idd2='"'+f"{idd}"+'"'
             self.wat_code+= f"\t(func ${idd} (export {idd2}) "
             self.codegen_params(edge_list[node[0]][1])
-            self.wat_code+= f"(result i32)\n"
+            dt_id=self.edge_list[node[0]][0][0]
+            identifier=self.edge_list[dt_id][0][0]
+            idd=self.edge_list[identifier][0][1]
+            if (idd!='void'):
+                self.wat_code+= f"(result i32)\n"
             self.codegen_func(node)
             self.wat_code+= f"\t)\n"
             return
     def codegen_func(self,node):
-        self.assign_codegen_local(edge_list[node[0]])
+        # print(edge_list[node[0]])
+        self.assign_codegen_local(edge_list[node[0]][2])
         for child in self.edge_list[node[0]]:
             if child[1]=='Statement':
                 self.codegen_statement(child)
@@ -1432,19 +1457,104 @@ class WATGenerator:
            
 
 
-    def codegen_statement(self,node):
+    def codegen_statement(self,node):      
+          
         if node[0] not in self.edge_list:
             return
+        if len(self.edge_list[node[0]])==3 and node[1]=="Statement":
+            # print("AAAA",node)
+            child1 = self.edge_list[node[0]][0]
+            child2 = self.edge_list[node[0]][1]
+            # print(child1,child2)
+            ch1=self.edge_list[child1[0]][0]
+            ch2=self.edge_list[child2[0]][0]
+
+            self.wat_code+=f"\t\t(local.get ${ch1[1]})\n"
+            self.wat_code+=f"\t\t(local.get ${ch2[1]})\n"
+            self.wat_code+=f"\t\ti32.const 4\n"
+            self.wat_code+=f"\t\t(i32.mul)\n"
+            self.wat_code+=f"\t\t(i32.add)\n"
+            # self.wat_code+=f"\t\t(local.set ${ch1[1]})\n"
+            self.codegen_expression(self.edge_list[node[0]][2])
+            self.wat_code+=f"\t\t(i32.store)\n"
+
+
+
         if node[1]=='Statement':
             for child in self.edge_list[node[0]]:
                 self.codegen_statement(child)
-        if node[1]=='Assign':
+        if node[1]=='Assign' or node[1]=="LoopAssign":
             self.codegen_assign(node)
+        if node[1]=='returner':   
+            # self.codegen
+            child_id = self.edge_list[node[0]][0]
+            # print(child_id)            
+            var_name = self.edge_list[child_id[0]][0][1]          
+            # print(var_name)
+            # self.assign_codegen_local(node)
+            self.wat_code+=f"\t\t(local.get ${var_name})\n"
+            return
+        if node[1]=='Floop':
+            self.codegen_floop(node)
+    
+    def codegen_floop(self,node):
+        # self.assign_codegen_local(node)
+        # self.wat_code+=f"\t(block\n"
+
+        self.codegen_statement(self.edge_list[node[0]][0])
+        self.wat_code+=f"\t\t(loop\n"
+        # self.wat_code+=f"\t\t\t(br_if\n"
+        # self.code_gen_branch(self.edge_list[node[0]][1])
+        # self.wat_code+=f"\t\t\t)\n"
+        self.codegen_statement(self.edge_list[node[0]][3])
+        self.codegen_incdec(self.edge_list[node[0]][2])
+        self.code_gen_branch(self.edge_list[node[0]][1])
+        self.wat_code+=f"\t\t\t(br_if 0)\n"
+        self.wat_code+=f"\t\t)\n"
+        # self.wat_code+=f"\t)\n"
+        return
+    def codegen_incdec(self,node):
+        id=self.edge_list[node[0]][0][0]
+        id=self.edge_list[id][0][1]
+        op=self.edge_list[node[0]][1][1]
+        # self.wat_code+=f"\t\t(\n"
+        if op=='++':
+            
+            self.wat_code+=f"\t\t(i32.add (local.get ${id}) (i32.const 1))\n"
+            self.wat_code+=f"\t\t(local.set ${id})\n"
+        if op=='--':
+            self.wat_code+=f"\t\t(i32.sub (local.get ${id}) (i32.const 1))\n"
+            self.wat_code+=f"\t\t(local.set ${id})\n"
+        # self.wat_code+=f"\t\t)\n"
+        return 
+
+    def code_gen_branch(self,node):
+        id1=self.edge_list[node[0]][0][0]
+        id1=self.edge_list[id1][0][1]
+        comp=self.edge_list[node[0]][1][0]
+        comp=self.edge_list[comp][0][1]
+        id2=self.edge_list[node[0]][2][0]
+        id2=self.edge_list[id2][0][1]
+        if comp=='>':
+            self.wat_code+=f"\t\t(i32.gt_s (local.get ${id1}) (local.get ${id2})\n"
+        if comp=='<':
+            self.wat_code+=f"\t\t(i32.lt_s (local.get ${id1}) (local.get ${id2}))\n"
+        if comp=='>=':
+            self.wat_code+=f"\t\t(i32.ge_s (local.get ${id1}) (local.get ${id2})\n"
+        if comp=='<=':
+            self.wat_code+=f"\t\t(i32.le_s (local.get ${id1}) (local.get ${id2})\n"
+        if comp=='==':
+            self.wat_code+=f"\t\t(i32.eq (local.get ${id1}) (local.get ${id2})\n"
+        if comp=='!=':
+            self.wat_code+=f"\t\t(i32.ne (local.get ${id1}) (local.get ${id2})\n"
+        return
+
+
 
     def codegen_assign(self,node):
         if node[0] not in self.edge_list:
             return
-        if node[1]=='Assign':
+        if node[1]=='Assign' or node[1]=="LoopAssign":
             for child in self.edge_list[node[0]]:
                 self.codegen_assign(child)
             
@@ -1534,13 +1644,29 @@ class WATGenerator:
             return
         
         
-        if len(edge_list[node[0]])>1:
+        if len(edge_list[node[0]])>2:
             child1=edge_list[node[0]][0]
             child2=edge_list[node[0]][2]
             op=edge_list[node[0]][1]
             self.codegen_expression(child1)
             self.codegen_expression(child2)
             self.codegen_expression(op)
+        elif len(edge_list[node[0]])==2:
+            # print(11111111111111)
+            ch1=edge_list[node[0]][0]
+            # print(ch1)
+            ch1=edge_list[ch1[0]][0][1]
+            
+            ch2=edge_list[node[0]][1]
+            ch2=edge_list[ch2[0]][0][1]
+            self.wat_code+=f"\t\t(local.get ${ch1})\n"
+            self.wat_code+=f"\t\t(local.get ${ch2})\n"
+            self.wat_code+=f"\t\ti32.const 4\n"
+            self.wat_code+=f"\t\t(i32.mul)\n"
+            self.wat_code+=f"\t\t(i32.add)\n"
+            self.wat_code+=f"\t\t(i32.load)\n"
+            return
+
         elif len(edge_list[node[0]])==1:
             child1=edge_list[node[0]][0]
             if node[1]=='IDENTIFIER':
@@ -1575,16 +1701,16 @@ if __name__ == '__main__':
         edge_list={}
         print("Parsing succesfull. The input is syntactically correct. AST Generation Succesfull. The AST file has been created.\n")
         graph =create_ast(parse(test_program),edge_list)
-        #graph.render('AST.gv', view=True)
+        graph.render('AST.gv', view=True)
         scopecheck1=scopecheck(edge_list)
         startId=list(edge_list.keys())[0]
         print("-------------Scope Checking Started----------------")
         scopecheck1.dfs_traverse(edge_list,startId)
         print("-------------Scope Checking Done----------------")
-        #typeCheck1 = TypeCheck(edge_list)
-        #print("-------------Type Checking Started----------------")
-        #typeCheck1.dfs_traverse(edge_list, startId)
-        #print("-------------Type Checking Done----------------")
+        # typeCheck1 = TypeCheck(edge_list)
+        # print("-------------Type Checking Started----------------")
+        # typeCheck1.dfs_traverse(edge_list, startId)
+        # print("-------------Type Checking Done----------------")
         print("-------------Code Generation Started----------------")
         codeGen = WATGenerator(edge_list, startId, startId) 
         codeGen.traverse(edge_list[startId][0])
