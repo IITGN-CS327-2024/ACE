@@ -7,6 +7,16 @@ python CodeGenerator.py codegen_testcases/arthmetic_testcase.ace
 ```
 in shell.
 
+This will generate the output.wat file for the given testcase.
+
+To convert the generated wat file type
+
+```
+wat2wasm output.wat -o <wasm_filename>.wasm
+```
+in shell.
+
+
 To run the SemanticAnalyzer.py file type
 
 ```
