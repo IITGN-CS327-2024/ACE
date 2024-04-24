@@ -1,5 +1,12 @@
 ## Group 7 
 
+To run the CodeGenerator.py file type
+
+```
+python CodeGenerator.py codegen_testcases/arthmetic_testcase.ace
+```
+in shell.
+
 To run the SemanticAnalyzer.py file type
 
 ```
