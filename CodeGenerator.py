@@ -1461,14 +1461,14 @@ class WATGenerator:
           
         if node[0] not in self.edge_list:
             return
-        if len(self.edge_list[node[0]])==3 and node[1]=="Statement":
+        if len(self.edge_list[node[0]])==3 and edge_list[node[0]][0][1]=="IDENTIFIER":
             # print("AAAA",node)
             child1 = self.edge_list[node[0]][0]
             child2 = self.edge_list[node[0]][1]
             # print(child1,child2)
             ch1=self.edge_list[child1[0]][0]
             ch2=self.edge_list[child2[0]][0]
-
+            
             self.wat_code+=f"\t\t(local.get ${ch1[1]})\n"
             self.wat_code+=f"\t\t(local.get ${ch2[1]})\n"
             self.wat_code+=f"\t\ti32.const 4\n"
@@ -1496,7 +1496,56 @@ class WATGenerator:
             return
         if node[1]=='Floop':
             self.codegen_floop(node)
-    
+        if node[1]=='IfCond':
+            self.codegen_if(node)
+            
+    def codegen_if(self,node):
+        if(node[0] not in self.edge_list):
+            return
+        
+        cond_stmt=self.edge_list[node[0]][0]
+     
+        exp1=self.edge_list[cond_stmt[0]][0]
+        
+        exp2=self.edge_list[cond_stmt[0]][2]
+ 
+        self.codegen_expression(exp1)
+        self.codegen_expression(exp2)
+        t=self.edge_list[cond_stmt[0]]
+        exp=self.edge_list[t[1][0]][0][1]
+        #print(cond_stmt)
+        #print(self.edge_list[cond_stmt[0]])
+        '''
+       
+        iden1=self.edge_list[t[0][0]][0]
+        iden2=self.edge_list[t[2][0]][0]
+        
+        #print(exp)
+        print(iden1)
+        print(exp)
+        iden1=self.edge_list[iden1[0]][0][1]
+        iden2=self.edge_list[iden2[0]][0][1]
+        self.wat_code+=f"\t\t(local.get ${iden1})\n"
+        self.wat_code+=f"\t\t(local.get ${iden2})\n"
+        '''
+        if(exp=='>'):
+            self.wat_code+=f"\t\t(i32.gt_s)\n"
+        if(exp=='<'):
+            self.wat_code+=f"\t\t(i32.lt_s)\n"
+        if(exp=='>='):
+            self.wat_code+=f"\t\t(i32.ge_s)\n"
+        if(exp=='<='):
+            self.wat_code+=f"\t\t(i32.le_s)\n"
+        if(exp=='=='):
+            self.wat_code+=f"\t\t(i32.eq)\n"
+        if(exp=='!='):
+            self.wat_code+=f"\t\t(i32.ne)\n"
+        self.wat_code+=f"\t\t(if\n"
+        self.wat_code+=f"\t\t\t(then \n"
+        #print("AAAA",self.edge_list[node[0]][1])
+        self.codegen_statement(self.edge_list[node[0]][1])     
+        self.wat_code+=f"\t\t\t))\n"
+        
     def codegen_floop(self,node):
         # self.assign_codegen_local(node)
         # self.wat_code+=f"\t(block\n"
@@ -1652,13 +1701,14 @@ class WATGenerator:
             self.codegen_expression(child2)
             self.codegen_expression(op)
         elif len(edge_list[node[0]])==2:
-            # print(11111111111111)
+            
             ch1=edge_list[node[0]][0]
-            # print(ch1)
+            
             ch1=edge_list[ch1[0]][0][1]
             
             ch2=edge_list[node[0]][1]
             ch2=edge_list[ch2[0]][0][1]
+            
             self.wat_code+=f"\t\t(local.get ${ch1})\n"
             self.wat_code+=f"\t\t(local.get ${ch2})\n"
             self.wat_code+=f"\t\ti32.const 4\n"
